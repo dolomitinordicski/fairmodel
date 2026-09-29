@@ -275,6 +275,8 @@ let db = null;
 let fsApi = null;
 let persistenceMode = "local";
 let saveTimer = null;
+let lastStatusMode = "local";
+let lastStatusAt = null;
 
 function validRegions(data){
   return Array.isArray(data) && data.length===DEF.length &&
@@ -285,45 +287,68 @@ function validRegions(data){
 function loadLocalData(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
-    if(!raw)return false;
+    if(!raw)return null;
     const parsed=JSON.parse(raw);
     if(validRegions(parsed.regions)){
       regions=parsed.regions.map(r=>({name:r.name,PN:Number(r.PN),SW:Number(r.SW),KP:Number(r.KP),SA:Number(r.SA)}));
-      return true;
+      return parsed;
     }
   }catch(e){console.warn("Local data load failed",e);}
-  return false;
+  return null;
 }
 
-function setSaveStatus(mode){
+function fmtSyncTime(ms){
+  if(!ms)return "";
+  try{return new Date(ms).toLocaleTimeString(lang==="de"?"de-DE":"it-IT",{hour:"2-digit",minute:"2-digit",second:"2-digit"});}
+  catch(e){return "";}
+}
+
+function setSaveStatus(mode, at){
   const box=document.getElementById("saveStatus");
   const txt=document.getElementById("saveStatusText");
+  lastStatusMode=mode;
+  if(at)lastStatusAt=at;
   if(!box||!txt)return;
   box.classList.remove("waiting","cloud","error");
-  if(mode==="waiting"){box.classList.add("waiting");txt.textContent=TR[lang].saveWaiting;}
-  else if(mode==="cloud"){box.classList.add("cloud");txt.textContent=TR[lang].saveCloud;}
-  else if(mode==="error"){box.classList.add("error");txt.textContent=TR[lang].saveError;}
-  else txt.textContent=TR[lang].saveLocal;
+  let label="";
+  if(mode==="waiting"){
+    box.classList.add("waiting");
+    label=TR[lang].saveWaiting;
+  }else if(mode==="cloud"){
+    box.classList.add("cloud");
+    label=TR[lang].saveCloud;
+  }else if(mode==="error"){
+    box.classList.add("error");
+    label=TR[lang].saveError;
+  }else{
+    label=TR[lang].saveLocal;
+  }
+  const stamp=lastStatusAt?fmtSyncTime(lastStatusAt):"";
+  txt.textContent=stamp?label+" · "+stamp:label;
 }
 
 async function persistData(){
-  const payload={regions:regions.map(r=>({...r})),version:1};
+  const now=Date.now();
+  const payload={regions:regions.map(r=>({...r})),version:2,updatedAt:now};
   try{localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));}catch(e){console.warn("Local save failed",e);}
   if(persistenceMode==="firebase" && db && fsApi){
     try{
+      setSaveStatus("waiting");
       await fsApi.setDoc(fsApi.doc(db,FIRESTORE_COLLECTION,FIRESTORE_DOC),{
-        ...payload,
+        regions:payload.regions,
+        version:2,
+        clientUpdatedAt:now,
         updatedAt:fsApi.serverTimestamp()
       },{merge:true});
-      setSaveStatus("cloud");
+      setSaveStatus("cloud",now);
       return;
     }catch(e){
       console.error("Firestore save failed",e);
-      setSaveStatus("error");
+      setSaveStatus("error",now);
       return;
     }
   }
-  setSaveStatus("local");
+  setSaveStatus("local",now);
 }
 
 function schedulePersist(){
@@ -332,9 +357,10 @@ function schedulePersist(){
 }
 
 async function initPersistence(){
-  loadLocalData();
+  const localData=loadLocalData();
   render();
   setSaveStatus("waiting");
+
   const cfg=window.FIREBASE_CONFIG;
   if(cfg && cfg.projectId && cfg.apiKey){
     try{
@@ -343,33 +369,69 @@ async function initPersistence(){
       const app=appMod.initializeApp(cfg);
       db=fsMod.getFirestore(app);
       fsApi={doc:fsMod.doc,getDoc:fsMod.getDoc,setDoc:fsMod.setDoc,serverTimestamp:fsMod.serverTimestamp};
-      const snap=await fsApi.getDoc(fsApi.doc(db,FIRESTORE_COLLECTION,FIRESTORE_DOC));
-      if(snap.exists() && validRegions(snap.data().regions)){
-        regions=snap.data().regions.map(r=>({name:r.name,PN:Number(r.PN),SW:Number(r.SW),KP:Number(r.KP),SA:Number(r.SA)}));
-      }else{
-        await fsApi.setDoc(fsApi.doc(db,FIRESTORE_COLLECTION,FIRESTORE_DOC),{
-          regions:regions.map(r=>({...r})),version:1,updatedAt:fsApi.serverTimestamp()
+      const ref=fsApi.doc(db,FIRESTORE_COLLECTION,FIRESTORE_DOC);
+      const snap=await fsApi.getDoc(ref);
+
+      const localTs=localData && Number(localData.updatedAt)?Number(localData.updatedAt):0;
+      const cloudData=snap.exists()?snap.data():null;
+      const cloudTs=cloudData && Number(cloudData.clientUpdatedAt)?Number(cloudData.clientUpdatedAt):0;
+      const cloudValid=cloudData && validRegions(cloudData.regions);
+
+      if(cloudValid && cloudTs>localTs){
+        regions=cloudData.regions.map(r=>({name:r.name,PN:Number(r.PN),SW:Number(r.SW),KP:Number(r.KP),SA:Number(r.SA)}));
+        const cache={regions:regions.map(r=>({...r})),version:2,updatedAt:cloudTs};
+        try{localStorage.setItem(STORAGE_KEY,JSON.stringify(cache));}catch(e){console.warn("Local cache save failed",e);}
+        render();
+        setSaveStatus("cloud",cloudTs);
+      }else if(localData && validRegions(localData.regions)){
+        const pushTs=localTs||Date.now();
+        await fsApi.setDoc(ref,{
+          regions:regions.map(r=>({...r})),
+          version:2,
+          clientUpdatedAt:pushTs,
+          updatedAt:fsApi.serverTimestamp()
         },{merge:true});
+        if(!localTs){
+          try{localStorage.setItem(STORAGE_KEY,JSON.stringify({regions:regions.map(r=>({...r})),version:2,updatedAt:pushTs}));}catch(e){}
+        }
+        setSaveStatus("cloud",pushTs);
+      }else if(cloudValid){
+        regions=cloudData.regions.map(r=>({name:r.name,PN:Number(r.PN),SW:Number(r.SW),KP:Number(r.KP),SA:Number(r.SA)}));
+        const ts=cloudTs||Date.now();
+        try{localStorage.setItem(STORAGE_KEY,JSON.stringify({regions:regions.map(r=>({...r})),version:2,updatedAt:ts}));}catch(e){}
+        render();
+        setSaveStatus("cloud",ts);
+      }else{
+        const seedTs=Date.now();
+        const seed={regions:regions.map(r=>({...r})),version:2,updatedAt:seedTs};
+        try{localStorage.setItem(STORAGE_KEY,JSON.stringify(seed));}catch(e){}
+        await fsApi.setDoc(ref,{
+          regions:seed.regions,
+          version:2,
+          clientUpdatedAt:seedTs,
+          updatedAt:fsApi.serverTimestamp()
+        },{merge:true});
+        setSaveStatus("cloud",seedTs);
       }
+
       persistenceMode="firebase";
-      setSaveStatus("cloud");
     }catch(e){
       console.warn("Firebase unavailable; using local storage",e);
       persistenceMode="local";
-      setSaveStatus("local");
+      const localTs=localData && Number(localData.updatedAt)?Number(localData.updatedAt):Date.now();
+      setSaveStatus("local",localTs);
     }
   }else{
     persistenceMode="local";
-    setSaveStatus("local");
+    const localTs=localData && Number(localData.updatedAt)?Number(localData.updatedAt):Date.now();
+    setSaveStatus("local",localTs);
   }
-  render();
 }
-
 function setLang(l){
   lang=l;
   document.getElementById("btnDE").classList.toggle("active",l==="de");
   document.getElementById("btnIT").classList.toggle("active",l==="it");
-  applyLang(); render(); setSaveStatus(persistenceMode==="firebase"?"cloud":"local");
+  applyLang(); render(); setSaveStatus(lastStatusMode,lastStatusAt);
 }
 
 function applyLang(){
