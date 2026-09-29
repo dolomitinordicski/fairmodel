@@ -445,7 +445,21 @@ function applyLang(){
   ["wPremKP","wPremSA"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t.wPrem;});
 }
 
-function gv(id){return parseFloat(document.getElementById(id)?.value)||0;}
+function parseFormattedInt(v){
+  const s=String(v??"").replace(/\./g,"").replace(/\s/g,"").replace(/,/g,"");
+  const n=parseInt(s,10);
+  return Number.isFinite(n)?n:0;
+}
+function fmtInputInt(n){return Math.round(Number(n)||0).toLocaleString("de-DE");}
+function gv(id){
+  const el=document.getElementById(id);
+  if(!el)return 0;
+  return el.dataset.formatted==="1"?parseFormattedInt(el.value):(parseFloat(el.value)||0);
+}
+function normalizeFormattedInput(el){
+  if(!el)return;
+  el.value=fmtInputInt(parseFormattedInt(el.value));
+}
 function readInputs(){regions.forEach((r,i)=>{r.PN=gv("pn"+i);r.SW=gv("sw"+i);r.KP=gv("kp"+i);r.SA=gv("sa"+i);});}
 
 function compute(){
@@ -483,8 +497,8 @@ function render(){
   document.getElementById("tbody").innerHTML=regions.map((r,i)=>`
     <tr>
       <td>${r.name}</td>
-      <td style="text-align:right"><input type="number" id="pn${i}" value="${r.PN}" min="0" onchange="onInput()"></td>
-      <td style="text-align:right"><input type="number" id="sw${i}" value="${r.SW}" min="0" onchange="onInput()"></td>
+      <td style="text-align:right"><input type="text" inputmode="numeric" data-formatted="1" id="pn${i}" value="${fmtInputInt(r.PN)}" onfocus="this.select()" onblur="normalizeFormattedInput(this);onInput()"></td>
+      <td style="text-align:right"><input type="text" inputmode="numeric" data-formatted="1" id="sw${i}" value="${fmtInputInt(r.SW)}" onfocus="this.select()" onblur="normalizeFormattedInput(this);onInput()"></td>
       <td style="text-align:right"><input type="number" id="kp${i}" value="${r.KP}" min="0" max="100" step="1" onchange="onInput()"></td>
       <td style="text-align:right"><input type="number" id="sa${i}" value="${r.SA}" min="0" onchange="onInput()"></td>
     </tr>`).join("");
