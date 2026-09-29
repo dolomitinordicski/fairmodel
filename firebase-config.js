@@ -1,12 +1,4 @@
-// DNS FAIR Model Firebase configuration.
-// Firebase Web configuration is intentionally public.
-// Access control must be enforced through Firestore Security Rules.
-window.FIREBASE_CONFIG = {
-  apiKey: "AIzaSyB33zc35GCrUVe5nTQT84MHnbL0A891x24",
-  authDomain: "fair-modell.firebaseapp.com",
-  projectId: "fair-modell",
-  storageBucket: "fair-modell.firebasestorage.app",
-  messagingSenderId: "94440162544",
-  appId: "1:94440162544:web:4712f68a02db00388fee35",
-  measurementId: "G-RMEVRWGKRS"
-};
+// Firebase client configuration intentionally not stored in this public repository.
+// Shared FAIR data will be accessed through an authenticated backend endpoint.
+// Until that backend is configured, the app falls back to browser-local persistence.
+window.FIREBASE_CONFIG = null;
