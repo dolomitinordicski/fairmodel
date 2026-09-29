@@ -87,6 +87,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
 .btn{padding:7px 16px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px}
 .btnp{background:var(--deep);color:white}.btnp:hover{background:var(--mid)}
 .btns{background:white;color:var(--deep);border:1px solid var(--border)}.btns:hover{background:var(--accent)}
+.save-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:white}.save-dot{width:7px;height:7px;border-radius:50%;background:var(--light)}.save-status.cloud .save-dot{background:#1a5c2e}.save-status.error .save-dot{background:#b85000}
 .footer{background:var(--deep);color:white;padding:7px 26px;font-size:10px;opacity:0.75;display:flex;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @media print{
   body{background:white}.btn-row,.lang-btn{display:none!important}
@@ -114,6 +115,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
   <div class="btn-row">
     <button class="btn btnp" onclick="window.print()">⬇ <span id="bPrint">PDF drucken</span></button>
     <button class="btn btns" onclick="resetData()">↺ <span id="bReset">Zurücksetzen</span></button>
+    <div class="save-status" id="saveStatus"><span class="save-dot"></span><span id="saveStatusText">Lokal gespeichert</span></div>
   </div>
 
   <div class="sec" id="secW">Parameter &amp; Gewichtung (fix)</div>
@@ -145,6 +147,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
       <tfoot><tr class="tfoot-row" id="tfoot"></tr></tfoot>
     </table>
   </div>
+  <div class="note" id="noteData">PN 2025/26: Dezember 2025–März 2026. Südtirol: offizielle Tourismusdaten; Osttirol: Landesstatistik Tirol; Cortina d’Ampezzo und Comelico: bestätigte Monatswerte der DNS-Arbeitsgrundlage.</div>
 
   <div class="sec" id="secR">Ergebnis: FAIR-Verteilung</div>
   <div class="rwrap">
@@ -179,6 +182,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
   <span id="fdate"></span>
 </div>
 
+<script src="firebase-config.js"></script>
 <script>
 const VF           = 45000;
 const FF           = 7500;
@@ -192,16 +196,16 @@ const WW           = {PN:15,SW:55,KP:20,SA:10};
 // Quote fatturate WS 2026 (anno in corso)
 const PREV = [12344,21447,11261,9185,13162,12383,11291,13925];
 
-// Dati WS 2025-26: SWDNS reali da analytics, KP da Drive, PN proxy 2024-25
+// Dati WS 2025-26: PN dicembre 2025–marzo 2026; SWDNS da analytics; KP/SA da dati DNS
 const DEF = [
-  {name:"Osttirol",                        PN:800690,  SW:691,  KP:24, SA:11},
-  {name:"3 Zinnen Dolomites",              PN:964968,  SW:2971, KP:27, SA:51},
-  {name:"Cortina d'Ampezzo",               PN:362135,  SW:60,   KP:0,  SA:5 },
-  {name:"Comelico",                        PN:34514,   SW:108,  KP:29, SA:5 },
-  {name:"Gsiesertal / Welsberg / Taisten", PN:194461,  SW:944,  KP:85, SA:11},
-  {name:"Antholzertal",                    PN:188788,  SW:722,  KP:79, SA:9 },
-  {name:"Ahrntal / Sand in Taufers",       PN:678847,  SW:230,  KP:9,  SA:10},
-  {name:"Seiser Alm / Val Gardena",        PN:2426065, SW:35,   KP:3,  SA:9 },
+  {name:"Osttirol",                        PN:835393,  SW:691,  KP:24, SA:11},
+  {name:"3 Zinnen Dolomites",              PN:936617,  SW:2971, KP:27, SA:51},
+  {name:"Cortina d'Ampezzo",               PN:77161,   SW:60,   KP:0,  SA:5 },
+  {name:"Comelico",                        PN:7564,    SW:108,  KP:29, SA:5 },
+  {name:"Gsiesertal / Welsberg / Taisten", PN:193071,  SW:944,  KP:85, SA:11},
+  {name:"Antholzertal",                    PN:182878,  SW:722,  KP:79, SA:9 },
+  {name:"Ahrntal / Sand in Taufers",       PN:692590,  SW:230,  KP:9,  SA:10},
+  {name:"Seiser Alm / Val Gardena",        PN:2410724, SW:35,   KP:3,  SA:9 },
 ];
 
 let lang    = "de";
@@ -220,6 +224,8 @@ const TR = {
     thN:"Partner", thPN:"PN", thSW:"SWDNS",
     k1l:"Variable Fee gesamt", k1s:"Vollständig zu verteilen",
     k2l:"Aktive Partner", k2s:"mit Score > 0", k3l:"Höchster Anteil",
+    noteData:"PN 2025/26: Dezember 2025–März 2026. Südtirol: offizielle Tourismusdaten; Osttirol: Landesstatistik Tirol; Cortina d’Ampezzo und Comelico: bestätigte Monatswerte der DNS-Arbeitsgrundlage.",
+    saveLocal:"Lokal gespeichert", saveCloud:"In Firebase gespeichert", saveError:"Speicherfehler",
     total:"Total",
   },
   it:{
@@ -234,22 +240,119 @@ const TR = {
     thN:"Partner", thPN:"PN", thSW:"SWDNS",
     k1l:"Variable Fee totale", k1s:"Distribuita interamente",
     k2l:"Partner attivi", k2s:"con score > 0", k3l:"Quota più alta",
+    noteData:"PN 2025/26: dicembre 2025–marzo 2026. Alto Adige: dati turistici ufficiali; Osttirol: Landesstatistik Tirol; Cortina d’Ampezzo e Comelico: valori mensili confermati della base di lavoro DNS.",
+    saveLocal:"Salvato in locale", saveCloud:"Salvato in Firebase", saveError:"Errore salvataggio",
     total:"Totale",
   }
 };
+
+
+const STORAGE_KEY = "dns-fairmodel-ws-2026-27";
+const FIRESTORE_COLLECTION = "fairModel";
+const FIRESTORE_DOC = "ws-2026-27";
+let db = null;
+let fsApi = null;
+let persistenceMode = "local";
+let saveTimer = null;
+
+function validRegions(data){
+  return Array.isArray(data) && data.length===DEF.length &&
+    data.every((r,i)=>r && r.name===DEF[i].name &&
+      ["PN","SW","KP","SA"].every(k=>Number.isFinite(Number(r[k]))));
+}
+
+function loadLocalData(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw)return false;
+    const parsed=JSON.parse(raw);
+    if(validRegions(parsed.regions)){
+      regions=parsed.regions.map(r=>({name:r.name,PN:Number(r.PN),SW:Number(r.SW),KP:Number(r.KP),SA:Number(r.SA)}));
+      return true;
+    }
+  }catch(e){console.warn("Local data load failed",e);}
+  return false;
+}
+
+function setSaveStatus(mode){
+  const box=document.getElementById("saveStatus");
+  const txt=document.getElementById("saveStatusText");
+  if(!box||!txt)return;
+  box.classList.remove("cloud","error");
+  if(mode==="cloud"){box.classList.add("cloud");txt.textContent=TR[lang].saveCloud;}
+  else if(mode==="error"){box.classList.add("error");txt.textContent=TR[lang].saveError;}
+  else txt.textContent=TR[lang].saveLocal;
+}
+
+async function persistData(){
+  const payload={regions:regions.map(r=>({...r})),version:1};
+  try{localStorage.setItem(STORAGE_KEY,JSON.stringify(payload));}catch(e){console.warn("Local save failed",e);}
+  if(persistenceMode==="firebase" && db && fsApi){
+    try{
+      await fsApi.setDoc(fsApi.doc(db,FIRESTORE_COLLECTION,FIRESTORE_DOC),{
+        ...payload,
+        updatedAt:fsApi.serverTimestamp()
+      },{merge:true});
+      setSaveStatus("cloud");
+      return;
+    }catch(e){
+      console.error("Firestore save failed",e);
+      setSaveStatus("error");
+      return;
+    }
+  }
+  setSaveStatus("local");
+}
+
+function schedulePersist(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(persistData,350);
+}
+
+async function initPersistence(){
+  loadLocalData();
+  const cfg=window.FIREBASE_CONFIG;
+  if(cfg && cfg.projectId && cfg.apiKey){
+    try{
+      const appMod=await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js");
+      const fsMod=await import("https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js");
+      const app=appMod.initializeApp(cfg);
+      db=fsMod.getFirestore(app);
+      fsApi={doc:fsMod.doc,getDoc:fsMod.getDoc,setDoc:fsMod.setDoc,serverTimestamp:fsMod.serverTimestamp};
+      const snap=await fsApi.getDoc(fsApi.doc(db,FIRESTORE_COLLECTION,FIRESTORE_DOC));
+      if(snap.exists() && validRegions(snap.data().regions)){
+        regions=snap.data().regions.map(r=>({name:r.name,PN:Number(r.PN),SW:Number(r.SW),KP:Number(r.KP),SA:Number(r.SA)}));
+      }else{
+        await fsApi.setDoc(fsApi.doc(db,FIRESTORE_COLLECTION,FIRESTORE_DOC),{
+          regions:regions.map(r=>({...r})),version:1,updatedAt:fsApi.serverTimestamp()
+        },{merge:true});
+      }
+      persistenceMode="firebase";
+      setSaveStatus("cloud");
+    }catch(e){
+      console.warn("Firebase unavailable; using local storage",e);
+      persistenceMode="local";
+      setSaveStatus("local");
+    }
+  }else{
+    persistenceMode="local";
+    setSaveStatus("local");
+  }
+  render();
+}
 
 function setLang(l){
   lang=l;
   document.getElementById("btnDE").classList.toggle("active",l==="de");
   document.getElementById("btnIT").classList.toggle("active",l==="it");
-  applyLang(); render();
+  applyLang(); render(); setSaveStatus(persistenceMode==="firebase"?"cloud":"local");
 }
 
 function applyLang(){
   const t=TR[lang];
   ["secW","secIn","secR","secC","secFinal",
    "wPN","wSW","wKP","wSA","bPrint","bReset","thN","thPN","thSW",
-   "k1l","k1s","k2l","k2s","k3l","noteBox","noteIVA"
+   "k1l","k1s","k2l","k2s","k3l","noteBox","noteIVA","noteData"
   ].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t[id]||"";});
   ["wL1","wL2","wL3","wL4"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t.wL;});
   ["wDirPN","wDirSW"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t.wDir;});
@@ -375,11 +478,11 @@ function render(){
     new Date().toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
 }
 
-function onInput(){readInputs();render();}
-function resetData(){regions=DEF.map(r=>({...r}));render();}
+function onInput(){readInputs();render();schedulePersist();}
+function resetData(){regions=DEF.map(r=>({...r}));render();schedulePersist();}
 
 applyLang();
-render();
+initPersistence();
 </script>
 </body>
 </html>
