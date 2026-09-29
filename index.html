@@ -87,7 +87,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
 .btn{padding:7px 16px;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;border:none;display:inline-flex;align-items:center;gap:5px}
 .btnp{background:var(--deep);color:white}.btnp:hover{background:var(--mid)}
 .btns{background:white;color:var(--deep);border:1px solid var(--border)}.btns:hover{background:var(--accent)}
-.save-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:white}.save-dot{width:7px;height:7px;border-radius:50%;background:var(--light)}.save-status.cloud .save-dot{background:#1a5c2e}.save-status.error .save-dot{background:#b85000}
+.save-status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);padding:5px 8px;border:1px solid var(--border);border-radius:5px;background:white}.save-dot{width:7px;height:7px;border-radius:50%;background:var(--light)}.save-status.waiting .save-dot{background:#d88a00}.save-status.cloud .save-dot{background:#1a5c2e}.save-status.error .save-dot{background:#b85000}
 .footer{background:var(--deep);color:white;padding:7px 26px;font-size:10px;opacity:0.75;display:flex;justify-content:space-between;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @media print{
   body{background:white}.btn-row,.lang-btn{display:none!important}
@@ -114,6 +114,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
 <div class="main">
   <div class="btn-row">
     <button class="btn btnp" onclick="window.print()">⬇ <span id="bPrint">PDF drucken</span></button>
+    <button class="btn btnp" onclick="printFinalTable()" style="background:var(--mid)">⬇ <span id="bPrintFinal">Nur Beitragstabelle</span></button>
     <button class="btn btns" onclick="resetData()">↺ <span id="bReset">Zurücksetzen</span></button>
     <div class="save-status" id="saveStatus"><span class="save-dot"></span><span id="saveStatusText">Lokal gespeichert</span></div>
   </div>
@@ -220,12 +221,12 @@ const TR = {
     wKP:"Kunstschnee-Index (%)", wSA:"Assoziierte Strukturen",
     wL:"🔒 Nicht änderbar", wDir:"▲ direkt", wPrem:"★ Prämienfaktor",
     note:"PN, SWDNS: direkte Normalisierung (Wert/Max)×Gewicht — Basis der Fee. KP und SA: Prämienfaktoren — wer mehr investiert zahlt weniger. 10% des Pools (€3.300) als Prämie auf KP+SA verteilt.",
-    bPrint:"PDF drucken", bReset:"Zurücksetzen",
+    bPrint:"PDF drucken", bPrintFinal:"Nur Beitragstabelle", bReset:"Zurücksetzen",
     thN:"Partner", thPN:"PN", thSW:"SWDNS",
     k1l:"Variable Fee gesamt", k1s:"Vollständig zu verteilen",
     k2l:"Aktive Partner", k2s:"mit Score > 0", k3l:"Höchster Anteil",
     noteData:"PN 2025/26: Dezember 2025–März 2026. Südtirol: offizielle Tourismusdaten; Osttirol: Landesstatistik Tirol; Cortina d’Ampezzo und Comelico: bestätigte Monatswerte der DNS-Arbeitsgrundlage.",
-    saveLocal:"Lokal gespeichert", saveCloud:"In Firebase gespeichert", saveError:"Speicherfehler",
+    saveLocal:"Lokal gespeichert", saveWaiting:"Firebase wird synchronisiert…", saveCloud:"Firebase verbunden", saveError:"Firebase-Fehler",
     total:"Total",
   },
   it:{
@@ -236,12 +237,12 @@ const TR = {
     wKP:"Indice neve artificiale (%)", wSA:"Strutture associate",
     wL:"🔒 Non modificabile", wDir:"▲ diretto", wPrem:"★ Fattore premiante",
     note:"PN, SWDNS: normalizzazione diretta (valore/max)×peso — base della fee. KP e SA: fattori premianti — chi investe di più paga meno. 10% del pool (€3.300) distribuito come premio su KP+SA.",
-    bPrint:"Stampa PDF", bReset:"Ripristina",
+    bPrint:"Stampa PDF", bPrintFinal:"Solo tabella contributi", bReset:"Ripristina",
     thN:"Partner", thPN:"PN", thSW:"SWDNS",
     k1l:"Variable Fee totale", k1s:"Distribuita interamente",
     k2l:"Partner attivi", k2s:"con score > 0", k3l:"Quota più alta",
     noteData:"PN 2025/26: dicembre 2025–marzo 2026. Alto Adige: dati turistici ufficiali; Osttirol: Landesstatistik Tirol; Cortina d’Ampezzo e Comelico: valori mensili confermati della base di lavoro DNS.",
-    saveLocal:"Salvato in locale", saveCloud:"Salvato in Firebase", saveError:"Errore salvataggio",
+    saveLocal:"Salvato in locale", saveWaiting:"Sincronizzazione Firebase…", saveCloud:"Firebase collegato", saveError:"Errore Firebase",
     total:"Totale",
   }
 };
@@ -278,8 +279,9 @@ function setSaveStatus(mode){
   const box=document.getElementById("saveStatus");
   const txt=document.getElementById("saveStatusText");
   if(!box||!txt)return;
-  box.classList.remove("cloud","error");
-  if(mode==="cloud"){box.classList.add("cloud");txt.textContent=TR[lang].saveCloud;}
+  box.classList.remove("waiting","cloud","error");
+  if(mode==="waiting"){box.classList.add("waiting");txt.textContent=TR[lang].saveWaiting;}
+  else if(mode==="cloud"){box.classList.add("cloud");txt.textContent=TR[lang].saveCloud;}
   else if(mode==="error"){box.classList.add("error");txt.textContent=TR[lang].saveError;}
   else txt.textContent=TR[lang].saveLocal;
 }
@@ -311,6 +313,8 @@ function schedulePersist(){
 
 async function initPersistence(){
   loadLocalData();
+  render();
+  setSaveStatus("waiting");
   const cfg=window.FIREBASE_CONFIG;
   if(cfg && cfg.projectId && cfg.apiKey){
     try{
@@ -351,7 +355,7 @@ function setLang(l){
 function applyLang(){
   const t=TR[lang];
   ["secW","secIn","secR","secC","secFinal",
-   "wPN","wSW","wKP","wSA","bPrint","bReset","thN","thPN","thSW",
+   "wPN","wSW","wKP","wSA","bPrint","bPrintFinal","bReset","thN","thPN","thSW",
    "k1l","k1s","k2l","k2s","k3l","noteBox","noteIVA","noteData"
   ].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t[id]||"";});
   ["wL1","wL2","wL3","wL4"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t.wL;});
@@ -476,6 +480,29 @@ function render(){
 
   document.getElementById("fdate").textContent=
     new Date().toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+}
+
+function printFinalTable(){
+  const t=TR[lang];
+  const res=compute();
+  const rows=res.map((r,i)=>{
+    const total=r.varFee+FF;
+    const prev=PREV[i];
+    const diff=total-prev;
+    const sign=diff>0?"+":"";
+    return "<tr><td>"+r.name+"</td><td>"+fmt2(r.score)+" %</td><td>"+fmtE(r.varFee)+"</td><td>"+fmtE(FF)+"</td><td><strong>"+fmtE(total)+"</strong></td><td>"+fmtE(prev)+"</td><td>"+sign+fmtE(diff)+"</td></tr>";
+  }).join("");
+  const totalVF=res.reduce((s,r)=>s+r.varFee,0);
+  const totalAll=res.reduce((s,r)=>s+r.varFee+FF,0);
+  const totalPrev=PREV.reduce((s,v)=>s+v,0);
+  const totalDiff=totalAll-totalPrev;
+  const date=new Date().toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+  const title=lang==="de"?"Jahresbeitrag 2027 — Partner":"Quota annuale 2027 — Partner";
+  const partner=lang==="de"?"Partner":"Partner";
+  const w=window.open("","_blank");
+  w.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+title+"</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:32px;color:#1a2e33}h2{color:#0D4D5E;font-size:18px;margin-bottom:4px}.sub{font-size:11px;color:#5a7a82;margin-bottom:20px}table{width:100%;border-collapse:collapse}thead{background:#0D4D5E;color:white}th,td{padding:9px 10px;border-bottom:1px solid #d0e4e5;font-size:11px;text-align:right}th:first-child,td:first-child{text-align:left}tbody tr:nth-child(even){background:#e8f4f4}tfoot{background:#E0F0F0;font-weight:700;color:#0D4D5E}.note{font-size:10px;color:#5a7a82;margin-top:12px}@page{size:landscape;margin:14mm}</style></head><body><img src='logo.png' style='height:34px;margin-bottom:12px'><h2>"+title+"</h2><div class='sub'>Dolomiti NordicSki · WS 2026/27 · "+date+"</div><table><thead><tr><th>"+partner+"</th><th>Score %</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th><th>Quote 2026</th><th>+/-</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr><td>"+t.total+"</td><td>100,00 %</td><td>"+fmtE(totalVF)+"</td><td>"+fmtE(FF*N)+"</td><td>"+fmtE(totalAll)+"</td><td>"+fmtE(totalPrev)+"</td><td>"+(totalDiff>0?"+":"")+fmtE(totalDiff)+"</td></tr></tfoot></table><div class='note'>Variable Fee = zzgl. MWST · escl. IVA</div></body></html>");
+  w.document.close();
+  setTimeout(function(){w.print();},400);
 }
 
 function onInput(){readInputs();render();schedulePersist();}
