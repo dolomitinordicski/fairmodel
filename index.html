@@ -73,6 +73,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
 .ftot span{font-size:11px;font-weight:700;color:var(--deep);text-align:right}
 .ftot span:first-child{text-align:left}
 .fwrap{background:white;border-radius:8px;border:1px solid var(--border);overflow:hidden;margin-bottom:18px}
+.g6o{display:grid;grid-template-columns:190px 170px 70px 90px 78px 90px;gap:4px}.ohead{background:var(--deep);color:white;padding:8px 10px;font-size:11px;font-weight:600}.ohead span:not(:first-child){text-align:right}.orrow{padding:7px 10px;border-bottom:1px solid var(--border);align-items:center}.orrow:nth-child(even){background:var(--accent)}.orrow span{font-size:11px;text-align:right}.orrow span:first-child{text-align:left;font-weight:600;color:var(--deep)}.otot{padding:8px 10px;background:var(--lighter);border-top:2px solid var(--light)}.otot span{font-size:11px;font-weight:700;color:var(--deep);text-align:right}.otot span:first-child{text-align:left}.owrap{background:white;border-radius:8px;border:1px solid var(--border);overflow:hidden;margin-bottom:18px}
 .hl{color:var(--deep);font-weight:700}
 .eu{color:#1a5c2e;font-weight:700}
 .pos{color:#b85000;font-weight:700}
@@ -115,6 +116,7 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
   <div class="btn-row">
     <button class="btn btnp" onclick="window.print()">⬇ <span id="bPrint">PDF drucken</span></button>
     <button class="btn btnp" onclick="printFinalTable()" style="background:var(--mid)">⬇ <span id="bPrintFinal">Nur Beitragstabelle</span></button>
+    <button class="btn btnp" onclick="printOrgTable()" style="background:var(--mid)">⬇ <span id="bPrintOrg">Organisationen</span></button>
     <button class="btn btns" onclick="resetData()">↺ <span id="bReset">Zurücksetzen</span></button>
     <div class="save-status" id="saveStatus"><span class="save-dot"></span><span id="saveStatusText">Lokal gespeichert</span></div>
   </div>
@@ -176,6 +178,13 @@ input[type=number]::-webkit-inner-spin-button{opacity:0.3}
     <div class="ftot g7f" id="ftot"></div>
   </div>
   <div class="note" id="noteIVA">zzgl. MWST · escl. IVA</div>
+
+  <div class="sec" id="secOrg">Aufschlüsselung je Organisation</div>
+  <div class="owrap">
+    <div class="ohead g6o"><span id="ohOrg">Organisation</span><span id="ohReg">Region / Partner DNS</span><span id="ohKey">Schlüssel</span><span id="ohVF">Variable Fee</span><span id="ohFF">Fixed Fee</span><span id="ohTot">Tot. 2027</span></div>
+    <div id="orgBody"></div>
+    <div class="otot g6o" id="orgTot"></div>
+  </div>
 </div>
 
 <div class="footer">
@@ -209,6 +218,17 @@ const DEF = [
   {name:"Seiser Alm / Val Gardena",        PN:2410724, SW:35,   KP:3,  SA:9 },
 ];
 
+const ORGS = [
+  {reg:"Osttirol",                        list:[["Osttirol",1.00,7500]]},
+  {reg:"3 Zinnen Dolomites",              list:[["TV Sexten",0.28,1500],["TV Innichen",0.28,1500],["TV Toblach",0.28,1500],["TV Niederdorf",0.08,1500],["TV Prags",0.08,1500]]},
+  {reg:"Cortina d'Ampezzo",               list:[["Cortina d'Ampezzo",1.00,7500]]},
+  {reg:"Comelico",                        list:[["Comelico",1.00,7500]]},
+  {reg:"Gsiesertal / Welsberg / Taisten", list:[["Gsiesertal / Welsberg / Taisten",1.00,7500]]},
+  {reg:"Antholzertal",                    list:[["Antholzertal",0.50,3750],["Biathlon Antholz",0.50,3750]]},
+  {reg:"Ahrntal / Sand in Taufers",       list:[["Ahrntal",0.50,3750],["Sand in Taufers",0.50,3750]]},
+  {reg:"Seiser Alm / Val Gardena",        list:[["Seiser Alm",0.50,3750],["Val Gardena",0.50,3750]]}
+];
+
 let lang    = "de";
 let regions = DEF.map(r=>({...r}));
 
@@ -221,10 +241,10 @@ const TR = {
     wKP:"Kunstschnee-Index (%)", wSA:"Assoziierte Strukturen",
     wL:"🔒 Nicht änderbar", wDir:"▲ direkt", wPrem:"★ Prämienfaktor",
     note:"PN, SWDNS: direkte Normalisierung (Wert/Max)×Gewicht — Basis der Fee. KP und SA: Prämienfaktoren — wer mehr investiert zahlt weniger. 10% des Pools (€3.300) als Prämie auf KP+SA verteilt.",
-    bPrint:"PDF drucken", bPrintFinal:"Nur Beitragstabelle", bReset:"Zurücksetzen",
+    bPrint:"PDF drucken", bPrintFinal:"Nur Beitragstabelle", bPrintOrg:"Organisationen drucken", bReset:"Zurücksetzen",
     thN:"Partner", thPN:"PN", thSW:"SWDNS",
     k1l:"Variable Fee gesamt", k1s:"Vollständig zu verteilen",
-    k2l:"Aktive Partner", k2s:"mit Score > 0", k3l:"Höchster Anteil",
+    k2l:"Aktive Partner", k2s:"mit Score > 0", k3l:"Höchster Anteil", secOrg:"Aufschlüsselung je Organisation", ohOrg:"Organisation", ohReg:"Region DNS", ohKey:"Schlüssel", ohVF:"Variable Fee", ohFF:"Fixed Fee", ohTot:"Tot. 2027",
     noteData:"PN 2025/26: Dezember 2025–März 2026. Südtirol: offizielle Tourismusdaten; Osttirol: Landesstatistik Tirol; Cortina d’Ampezzo und Comelico: bestätigte Monatswerte der DNS-Arbeitsgrundlage.",
     saveLocal:"Lokal gespeichert", saveWaiting:"Firebase wird synchronisiert…", saveCloud:"Firebase verbunden", saveError:"Firebase-Fehler",
     total:"Total",
@@ -237,10 +257,10 @@ const TR = {
     wKP:"Indice neve artificiale (%)", wSA:"Strutture associate",
     wL:"🔒 Non modificabile", wDir:"▲ diretto", wPrem:"★ Fattore premiante",
     note:"PN, SWDNS: normalizzazione diretta (valore/max)×peso — base della fee. KP e SA: fattori premianti — chi investe di più paga meno. 10% del pool (€3.300) distribuito come premio su KP+SA.",
-    bPrint:"Stampa PDF", bPrintFinal:"Solo tabella contributi", bReset:"Ripristina",
+    bPrint:"Stampa PDF", bPrintFinal:"Solo tabella contributi", bPrintOrg:"Stampa organizzazioni", bReset:"Ripristina",
     thN:"Partner", thPN:"PN", thSW:"SWDNS",
     k1l:"Variable Fee totale", k1s:"Distribuita interamente",
-    k2l:"Partner attivi", k2s:"con score > 0", k3l:"Quota più alta",
+    k2l:"Partner attivi", k2s:"con score > 0", k3l:"Quota più alta", secOrg:"Dettaglio per organizzazione", ohOrg:"Organizzazione", ohReg:"Regione DNS", ohKey:"Chiave", ohVF:"Variable Fee", ohFF:"Fixed Fee", ohTot:"Tot. 2027",
     noteData:"PN 2025/26: dicembre 2025–marzo 2026. Alto Adige: dati turistici ufficiali; Osttirol: Landesstatistik Tirol; Cortina d’Ampezzo e Comelico: valori mensili confermati della base di lavoro DNS.",
     saveLocal:"Salvato in locale", saveWaiting:"Sincronizzazione Firebase…", saveCloud:"Firebase collegato", saveError:"Errore Firebase",
     total:"Totale",
@@ -354,8 +374,8 @@ function setLang(l){
 
 function applyLang(){
   const t=TR[lang];
-  ["secW","secIn","secR","secC","secFinal",
-   "wPN","wSW","wKP","wSA","bPrint","bPrintFinal","bReset","thN","thPN","thSW",
+  ["secW","secIn","secR","secC","secFinal","secOrg",
+   "wPN","wSW","wKP","wSA","bPrint","bPrintFinal","bPrintOrg","bReset","thN","thPN","thSW","ohOrg","ohReg","ohKey","ohVF","ohFF","ohTot",
    "k1l","k1s","k2l","k2s","k3l","noteBox","noteIVA","noteData"
   ].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t[id]||"";});
   ["wL1","wL2","wL3","wL4"].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=t.wL;});
@@ -478,6 +498,19 @@ function render(){
      <span><strong>${fmtE(tPrev)}</strong></span>
      <span class="${tDiff>0?"pos":"neg"}"><strong>${tDiff>0?"+":""}${fmtE(tDiff)}</strong></span>`;
 
+  let orgRows="",orgVF=0,orgFF=0,orgTotal=0;
+  ORGS.forEach(group=>{
+    const area=res.find(r=>r.name===group.reg);
+    const areaVF=area?area.varFee:0;
+    group.list.forEach((org,idx)=>{
+      const vf=areaVF*org[1], ff=org[2], tot=vf+ff;
+      orgVF+=vf; orgFF+=ff; orgTotal+=tot;
+      orgRows += `<div class="orrow g6o"><span>${org[0]}</span><span>${idx===0?group.reg:""}</span><span>${fmt2(org[1]*100)} %</span><span class="eu">${fmtE(vf)}</span><span>${fmtE(ff)}</span><span style="font-weight:700;color:var(--deep)">${fmtE(tot)}</span></div>`;
+    });
+  });
+  document.getElementById("orgBody").innerHTML=orgRows;
+  document.getElementById("orgTot").innerHTML=`<span>${t.total}</span><span></span><span>100,00 %</span><span class="eu">${fmtE(orgVF)}</span><span>${fmtE(orgFF)}</span><span>${fmtE(orgTotal)}</span>`;
+
   document.getElementById("fdate").textContent=
     new Date().toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
 }
@@ -501,6 +534,26 @@ function printFinalTable(){
   const partner=lang==="de"?"Partner":"Partner";
   const w=window.open("","_blank");
   w.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+title+"</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:32px;color:#1a2e33}h2{color:#0D4D5E;font-size:18px;margin-bottom:4px}.sub{font-size:11px;color:#5a7a82;margin-bottom:20px}table{width:100%;border-collapse:collapse}thead{background:#0D4D5E;color:white}th,td{padding:9px 10px;border-bottom:1px solid #d0e4e5;font-size:11px;text-align:right}th:first-child,td:first-child{text-align:left}tbody tr:nth-child(even){background:#e8f4f4}tfoot{background:#E0F0F0;font-weight:700;color:#0D4D5E}.note{font-size:10px;color:#5a7a82;margin-top:12px}@page{size:landscape;margin:14mm}</style></head><body><img src='logo.png' style='height:34px;margin-bottom:12px'><h2>"+title+"</h2><div class='sub'>Dolomiti NordicSki · WS 2026/27 · "+date+"</div><table><thead><tr><th>"+partner+"</th><th>Score %</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th><th>Quote 2026</th><th>+/-</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr><td>"+t.total+"</td><td>100,00 %</td><td>"+fmtE(totalVF)+"</td><td>"+fmtE(FF*N)+"</td><td>"+fmtE(totalAll)+"</td><td>"+fmtE(totalPrev)+"</td><td>"+(totalDiff>0?"+":"")+fmtE(totalDiff)+"</td></tr></tfoot></table><div class='note'>Variable Fee = zzgl. MWST · escl. IVA</div></body></html>");
+  w.document.close();
+  setTimeout(function(){w.print();},400);
+}
+
+function printOrgTable(){
+  const t=TR[lang], res=compute();
+  let rows="", sumVF=0, sumFF=0, sumTot=0;
+  ORGS.forEach(group=>{
+    const area=res.find(r=>r.name===group.reg);
+    const areaVF=area?area.varFee:0;
+    group.list.forEach((org,idx)=>{
+      const vf=areaVF*org[1], ff=org[2], tot=vf+ff;
+      sumVF+=vf; sumFF+=ff; sumTot+=tot;
+      rows += "<tr><td>"+org[0]+"</td><td>"+(idx===0?group.reg:"")+"</td><td>"+fmt2(org[1]*100)+" %</td><td>"+fmtE(vf)+"</td><td>"+fmtE(ff)+"</td><td><strong>"+fmtE(tot)+"</strong></td></tr>";
+    });
+  });
+  const date=new Date().toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"});
+  const title=lang==="de"?"Jahresbeitrag 2027 — Organisationen":"Quota annuale 2027 — Organizzazioni";
+  const w=window.open("","_blank");
+  w.document.write("<!DOCTYPE html><html><head><meta charset='UTF-8'><title>"+title+"</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:32px;color:#1a2e33}h2{color:#0D4D5E;font-size:18px;margin-bottom:4px}.sub{font-size:11px;color:#5a7a82;margin-bottom:20px}table{width:100%;border-collapse:collapse}thead{background:#0D4D5E;color:white}th,td{padding:9px 10px;border-bottom:1px solid #d0e4e5;font-size:11px;text-align:right}th:first-child,td:first-child{text-align:left}tbody tr:nth-child(even){background:#e8f4f4}tfoot{background:#E0F0F0;font-weight:700;color:#0D4D5E}.note{font-size:10px;color:#5a7a82;margin-top:12px}@page{size:landscape;margin:14mm}</style></head><body><img src='logo.png' style='height:34px;margin-bottom:12px'><h2>"+title+"</h2><div class='sub'>Dolomiti NordicSki · WS 2026/27 · "+date+"</div><table><thead><tr><th>"+(lang==="de"?"Organisation":"Organizzazione")+"</th><th>"+(lang==="de"?"Region DNS":"Regione DNS")+"</th><th>"+(lang==="de"?"Schlüssel":"Chiave")+"</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th></tr></thead><tbody>"+rows+"</tbody><tfoot><tr><td>"+t.total+"</td><td></td><td>100,00 %</td><td>"+fmtE(sumVF)+"</td><td>"+fmtE(sumFF)+"</td><td>"+fmtE(sumTot)+"</td></tr></tfoot></table><div class='note'>Variable Fee = zzgl. MWST · escl. IVA</div></body></html>");
   w.document.close();
   setTimeout(function(){w.print();},400);
 }
