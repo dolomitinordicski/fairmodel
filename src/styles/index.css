@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body { @apply m-0 bg-dns-gray text-dns-text font-sans text-[13px]; }
+  button, input { font: inherit; }
+}
+@layer components {
+  .dns-note { @apply bg-dns-accent border-l-[3px] border-dns-mid rounded-r-md px-3 py-2 text-[10px] md:text-[11px] text-dns-muted leading-relaxed mb-4; }
+  .dns-table-wrap { @apply bg-white rounded-lg border border-dns-border overflow-x-auto overflow-y-hidden mb-4; }
+  .dns-table { @apply w-full border-collapse min-w-[720px] md:min-w-[760px]; }
+  .dns-table thead { @apply bg-dns-deep text-white; }
+  .dns-table th { @apply px-2.5 py-2 text-[11px] font-semibold tracking-[.3px] text-left; }
+  .dns-table th:not(:first-child) { @apply text-right; }
+  .dns-table td { @apply px-2.5 py-1.5 align-middle border-b border-dns-border; }
+  .dns-table tbody tr:nth-child(even) { @apply bg-dns-accent; }
+  .dns-table td:first-child { @apply font-semibold text-dns-deep text-xs; }
+  .dns-input { @apply w-[92px] md:w-[100px] border border-dns-border rounded px-2 py-1.5 md:py-1 text-xs text-right bg-white text-dns-text focus:outline-none focus:border-dns-mid focus:ring-2 focus:ring-dns-mid/10; }
+  .dns-btn { @apply rounded px-3 md:px-4 py-2 md:py-1.5 text-[11px] md:text-xs font-semibold inline-flex items-center justify-center gap-1.5; }
+  .dns-btn-primary { @apply dns-btn bg-dns-deep text-white hover:bg-dns-mid; }
+  .dns-btn-secondary { @apply dns-btn bg-white text-dns-deep border border-dns-border hover:bg-dns-accent; }
+}
+@media print {
+  body { background: white; }
+  .print-hide { display:none!important; }
+  .print-main { padding:8px 12px!important; }
+}
