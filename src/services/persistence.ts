@@ -1,5 +1,5 @@
 import { initializeApp } from 'firebase/app';
-import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, getFirestore, serverTimestamp, setDoc, type DocumentReference, type Firestore } from 'firebase/firestore';
 import type { Region } from '../types/fair';
 import { DEFAULT_REGIONS, FIRESTORE_COLLECTION, FIRESTORE_DOC, STORAGE_KEY } from '../features/fair/constants';
 import { firebaseConfig } from './firebaseConfig';
@@ -46,7 +46,7 @@ export async function connectPersistence(local: PersistSnapshot | null) {
   return { mode: 'firebase' as const, db, ref, regions, updatedAt: ts };
 }
 
-export async function saveCloud(db: ReturnType<typeof getFirestore>, ref: ReturnType<typeof doc>, regions: Region[], updatedAt = Date.now()) {
+export async function saveCloud(db: Firestore, ref: DocumentReference, regions: Region[], updatedAt = Date.now()) {
   saveLocal(regions, updatedAt);
   await setDoc(ref, { regions, version: 2, clientUpdatedAt: updatedAt, updatedAt: serverTimestamp() }, { merge: true });
   return updatedAt;
