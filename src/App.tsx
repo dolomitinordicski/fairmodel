@@ -82,9 +82,15 @@ export default function App(){
   }
 
   return <div className="min-h-screen flex flex-col">
-    <header className="sticky top-0 z-50 bg-dns-deep text-white px-4 py-3 md:px-[1.8rem] md:py-[1.1rem] flex items-center justify-between gap-4 shadow-[0_1px_0_rgba(255,255,255,.08)]">
-      <div className="flex items-center gap-[18px] min-w-0"><img src={logoUrl} alt="Dolomiti NordicSki" className="h-10 w-auto block"/><div><div className="font-display text-[16px] font-bold text-white leading-tight">{t.title}</div><div className="font-alt text-[12px] font-light text-dns-light mt-0.5 leading-tight">{t.subtitle}</div></div></div>
-      <div className="print-hide flex items-center gap-2 md:gap-3 whitespace-nowrap"><span className="hidden sm:inline-flex rounded-full bg-dns-mid px-3.5 py-1 text-[11px] font-display font-semibold tracking-[.06em] text-white">WS · SI 2026/27</span><div>{(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} className={'ml-1 rounded-full px-2.5 py-1 text-[10px] font-display font-semibold tracking-[.05em] '+(language===l?'bg-white text-dns-deep':'bg-white/10 text-white/75 hover:bg-white/15')}>{l.toUpperCase()}</button>)}</div></div>
+    <header className="sticky top-0 z-50 bg-dns-deep text-white px-4 py-3.5 md:px-[1.8rem] flex items-center justify-between gap-4 shadow-[0_1px_0_rgba(255,255,255,.08)]">
+      <div className="flex items-center gap-[18px] min-w-0">
+        <img src={logoUrl} alt="Dolomiti NordicSki" className="h-11 md:h-12 w-auto block"/>
+        <div className="min-w-0">
+          <div className="font-display uppercase text-[21px] md:text-[23px] leading-none tracking-[.035em] text-white whitespace-nowrap"><span className="font-bold">DNS</span><span className="font-normal ml-2">FAIR</span></div>
+          <div className="font-alt text-[12px] md:text-[13px] font-normal uppercase tracking-[.035em] text-dns-light mt-1 leading-tight truncate">{t.subtitle}</div>
+        </div>
+      </div>
+      <div className="print-hide whitespace-nowrap">{(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} className={'ml-1 rounded-full px-2.5 py-1 text-[10px] font-display font-semibold tracking-[.05em] '+(language===l?'bg-white text-dns-deep':'bg-white/10 text-white/75 hover:bg-white/15')}>{l.toUpperCase()}</button>)}</div>
     </header>
     <main className="print-main flex-1 p-3 md:px-6 md:py-4 max-w-[1100px] w-full mx-auto">
       <div className="print-hide flex flex-wrap gap-2 items-center mb-4">
@@ -119,6 +125,6 @@ export default function App(){
       <SectionTitle>{t.orgs}</SectionTitle>
       <div className="dns-table-wrap"><table className="dns-table"><thead><tr><th>{t.organisation}</th><th>{t.region}</th><th>{t.key}</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th></tr></thead><tbody>{ORGANISATIONS.flatMap(g=>{const area=results.find(r=>r.name===g.reg);return g.list.map((o,i)=>{const vf=(area?.varFee||0)*o[1],tot=vf+o[2];return <tr key={g.reg+o[0]}><td>{o[0]}</td><td>{i===0?g.reg:''}</td><td className="text-right">{fmt2(o[1]*100)} %</td><td className="text-right font-bold text-green-800">{fmtE(vf)}</td><td className="text-right">{fmtE(o[2])}</td><td className="text-right font-bold text-dns-deep">{fmtE(tot)}</td></tr>;});})}</tbody><tfoot><tr className="bg-dns-lighter font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td></td><td className="text-right">100,00 %</td><td className="text-right">{fmtE(orgTotals.vf)}</td><td className="text-right">{fmtE(orgTotals.ff)}</td><td className="text-right">{fmtE(orgTotals.total)}</td></tr></tfoot></table></div>
     </main>
-    <footer className="bg-dns-deep text-white/75 px-3 md:px-6 py-2 text-[9px] md:text-[10px] flex justify-between flex-wrap gap-2"><span>Dolomiti NordicSki · FAIR Model · WS 2026/27</span><span>{new Date().toLocaleDateString('de-DE')}</span></footer>
+    <footer className="bg-dns-deep px-4 md:px-[1.8rem] py-3 font-alt"><div className="max-w-[1100px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] md:text-[11px] uppercase tracking-[.04em] text-white/65"><span>Dolomiti NordicSki</span><span>DNS FAIR · © {new Date().getFullYear()}</span></div></footer>
   </div>;
 }
