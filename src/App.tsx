@@ -1,3 +1,4 @@
+import logoUrl from '../logo1.png';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Region, SaveMode } from './types/fair';
 import { translations } from './i18n/translations';
@@ -17,8 +18,6 @@ function FormattedIntInput({value,onCommit}:{value:number;onCommit:(value:number
     onChange={e=>setText(e.target.value)}
     onBlur={()=>{const next=parseFormattedInt(text);setText(fmtInputInt(next));onCommit(next);}} />;
 }
-
-const logoUrl='https://dolomitinordicski.github.io/analytics/logo.png';
 
 export default function App(){
   const [language,setLanguage]=useState<Language>('de');
@@ -74,7 +73,11 @@ export default function App(){
     }
     const w=window.open('','_blank'); if(!w)return;
     w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+title+"</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:32px;color:#1a2e33}h2{color:#0D4D5E;font-size:18px;margin-bottom:4px}.sub{font-size:11px;color:#5a7a82;margin-bottom:20px}table{width:100%;border-collapse:collapse}thead{background:#0D4D5E;color:white}th,td{padding:9px 10px;border-bottom:1px solid #d0e4e5;font-size:11px;text-align:right}th:first-child,td:first-child{text-align:left}tbody tr:nth-child(even){background:#e8f4f4}tfoot{background:#E0F0F0;font-weight:700;color:#0D4D5E}@page{size:landscape;margin:14mm}</style></head><body><img src='"+location.origin+import.meta.env.BASE_URL+"logo.png' style='height:34px;margin-bottom:12px'><h2>"+title+"</h2><div class='sub'>Dolomiti NordicSki · WS 2026/27 · "+date+"</div><table><thead>"+head+"</thead><tbody>"+body+"</tbody><tfoot>"+foot+"</tfoot></table></body></html>");
-    w.document.close();window.setTimeout(()=>w.print(),400);
+    w.document.close();
+    const printNow=()=>window.setTimeout(()=>w.print(),100);
+    const img=w.document.querySelector('img');
+    if(img && !img.complete){img.addEventListener('load',printNow,{once:true});img.addEventListener('error',printNow,{once:true});}
+    else printNow();
   }
 
   return <div className="min-h-screen flex flex-col">
