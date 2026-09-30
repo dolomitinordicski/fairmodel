@@ -1,3 +1,4 @@
+import logoUrl from '../logo.png';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Region, SaveMode } from './types/fair';
 import { translations } from './i18n/translations';
@@ -67,7 +68,7 @@ export default function App(){
 
   return <div className="min-h-screen flex flex-col">
     <header className="bg-dns-deep text-white px-3 py-2.5 md:px-6 md:py-3 flex items-start md:items-center justify-between gap-3">
-      <div className="flex items-center gap-2 md:gap-3 min-w-0"><img src={import.meta.env.BASE_URL+'logo.png'} alt="DNS" className="h-[30px] md:h-9 w-auto"/><div><div className="text-sm md:text-[15px] font-semibold">{t.title}</div><div className="text-[9px] md:text-[11px] opacity-60 leading-tight">{t.subtitle}</div></div></div>
+      <div className="flex items-center gap-2 md:gap-3 min-w-0"><img src={logoUrl} alt="DNS" className="h-[30px] md:h-9 w-auto"/><div><div className="text-sm md:text-[15px] font-semibold">{t.title}</div><div className="text-[9px] md:text-[11px] opacity-60 leading-tight">{t.subtitle}</div></div></div>
       <div className="print-hide whitespace-nowrap">{(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} className={'ml-1 rounded border px-2 md:px-3 py-1 text-[11px] '+(language===l?'bg-white/20 border-white':'border-white/30')}>{l.toUpperCase()}</button>)}</div>
     </header>
     <main className="print-main flex-1 p-3 md:px-6 md:py-4 max-w-[1100px] w-full mx-auto">
