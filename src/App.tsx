@@ -1,4 +1,3 @@
-import logoUrl from '../logo.png';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Region, SaveMode } from './types/fair';
 import { translations } from './i18n/translations';
@@ -7,8 +6,8 @@ import { DEFAULT_REGIONS, FF, N, ORGANISATIONS, PREV, VF } from './features/fair
 import { fmt2, fmtE, fmtInputInt, parseFormattedInt } from './utils/formatting';
 import { connectPersistence, loadLocal, saveCloud, saveLocal } from './services/persistence';
 
-const SectionTitle=({children}:{children:React.ReactNode})=><h2 className="font-display text-[10px] md:text-[11px] font-bold text-dns-deep uppercase tracking-[.9px] mt-4 md:mt-5 mb-2 border-b border-dns-light pb-1.5">{children}</h2>;
-const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="bg-white border-t-2 border-t-dns-deep border-x border-b border-dns-border p-2.5 md:px-3 md:py-2.5"><div className="font-display text-[10px] uppercase tracking-[.35px] text-dns-muted mb-1">{label}</div><div className="font-display text-[17px] md:text-[19px] font-bold text-dns-deep">{value}</div>{sub&&<div className="text-[10px] text-dns-muted mt-0.5">{sub}</div>}</div>;
+const SectionTitle=({children}:{children:React.ReactNode})=><h2 className="font-display text-[11px] font-bold text-dns-deep uppercase tracking-[.07em] mt-4 md:mt-5 mb-2">{children}</h2>;
+const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="bg-white rounded-[10px] border-t-[3px] border-t-dns-light p-3 md:px-4 md:py-3 shadow-[0_1px_4px_rgba(13,77,94,.07)]"><div className="font-display text-[10px] font-bold uppercase tracking-[.07em] text-dns-mid mb-1">{label}</div><div className="font-display text-[20px] md:text-[21px] leading-none font-bold text-dns-deep">{value}</div>{sub&&<div className="font-alt text-[10px] text-[#8a9da3] mt-1">{sub}</div>}</div>;
 
 function FormattedIntInput({value,onCommit}:{value:number;onCommit:(value:number)=>void}){
   const [text,setText]=useState(()=>fmtInputInt(value));
@@ -18,6 +17,8 @@ function FormattedIntInput({value,onCommit}:{value:number;onCommit:(value:number
     onChange={e=>setText(e.target.value)}
     onBlur={()=>{const next=parseFormattedInt(text);setText(fmtInputInt(next));onCommit(next);}} />;
 }
+
+const logoUrl='https://dolomitinordicski.github.io/analytics/logo.png';
 
 export default function App(){
   const [language,setLanguage]=useState<Language>('de');
@@ -77,9 +78,9 @@ export default function App(){
   }
 
   return <div className="min-h-screen flex flex-col">
-    <header className="sticky top-0 z-50 bg-dns-deep text-white px-3 py-2.5 md:px-6 md:py-3 flex items-start md:items-center justify-between gap-3 border-b border-white/10">
-      <div className="flex items-center gap-2 md:gap-3 min-w-0"><img src={logoUrl} alt="DNS" className="h-[30px] md:h-9 w-auto"/><div><div className="font-display text-sm md:text-[15px] font-semibold tracking-[.1px]">{t.title}</div><div className="text-[9px] md:text-[11px] opacity-60 leading-tight">{t.subtitle}</div></div></div>
-      <div className="print-hide whitespace-nowrap">{(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} className={'ml-1 rounded border px-2 md:px-3 py-1 text-[11px] '+(language===l?'bg-white/20 border-white':'border-white/30')}>{l.toUpperCase()}</button>)}</div>
+    <header className="sticky top-0 z-50 bg-dns-deep text-white px-4 py-3 md:px-[1.8rem] md:py-[1.1rem] flex items-center justify-between gap-4 shadow-[0_1px_0_rgba(255,255,255,.08)]">
+      <div className="flex items-center gap-[18px] min-w-0"><img src={logoUrl} alt="Dolomiti NordicSki" className="h-10 w-auto block"/><div><div className="font-display text-[16px] font-bold text-white leading-tight">{t.title}</div><div className="font-alt text-[12px] font-light text-dns-light mt-0.5 leading-tight">{t.subtitle}</div></div></div>
+      <div className="print-hide flex items-center gap-2 md:gap-3 whitespace-nowrap"><span className="hidden sm:inline-flex rounded-full bg-dns-mid px-3.5 py-1 text-[11px] font-display font-semibold tracking-[.06em] text-white">WS · SI 2026/27</span><div>{(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} className={'ml-1 rounded-full px-2.5 py-1 text-[10px] font-display font-semibold tracking-[.05em] '+(language===l?'bg-white text-dns-deep':'bg-white/10 text-white/75 hover:bg-white/15')}>{l.toUpperCase()}</button>)}</div></div>
     </header>
     <main className="print-main flex-1 p-3 md:px-6 md:py-4 max-w-[1100px] w-full mx-auto">
       <div className="print-hide flex flex-wrap gap-2 items-center mb-4">
@@ -92,7 +93,7 @@ export default function App(){
 
       <SectionTitle>{t.parameters}</SectionTitle>
       <div className="grid grid-cols-1 min-[421px]:grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
-        {[[ 'PN',t.pn,'15%',t.direct],['SWDNS',t.sw,'55%',t.direct],['KP',t.kp,'20%',t.premium],['SA',t.sa,'10%',t.premium]].map((x,i)=><div key={x[0]} className="bg-dns-deep text-white p-3 text-center border border-white/10"><div className="text-[15px] md:text-[17px] font-bold text-dns-light">{x[0]}</div><div className="text-[9px] md:text-[10px] opacity-65 my-1 min-h-[22px]">{x[1]}</div><div className="text-lg md:text-[22px] font-bold">{x[2]}</div><span className={'inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full '+(i<2?'bg-dns-light/20 text-dns-light':'bg-amber-200/20 text-amber-300')}>{x[3]}</span><div className="text-[9px] opacity-40 mt-1">{t.locked}</div></div>)}
+        {[[ 'PN',t.pn,'15%',t.direct],['SWDNS',t.sw,'55%',t.direct],['KP',t.kp,'20%',t.premium],['SA',t.sa,'10%',t.premium]].map((x,i)=><div key={x[0]} className="bg-white rounded-[10px] border-t-[3px] border-t-dns-light p-3 text-center shadow-[0_1px_4px_rgba(13,77,94,.07)]"><div className="font-display text-[15px] md:text-[17px] font-bold text-dns-deep">{x[0]}</div><div className="font-alt text-[9px] md:text-[10px] text-dns-muted my-1 min-h-[22px]">{x[1]}</div><div className="font-display text-lg md:text-[22px] font-bold text-dns-deep">{x[2]}</div><span className={'inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full '+(i<2?'bg-dns-light/20 text-dns-light':'bg-amber-200/20 text-amber-300')}>{x[3]}</span><div className="font-alt text-[9px] text-dns-muted/70 mt-1">{t.locked}</div></div>)}
       </div>
       <div className="dns-note">{t.note}</div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 mb-4"><Kpi label={t.variableFee} value="€ 45.000" sub={t.fullDistribution}/><Kpi label={t.activePartners} value={String(results.filter(r=>r.score>0).length)} sub={t.scorePositive}/><Kpi label={t.highestShare} value={fmtE(maxR.varFee)} sub={maxR.name}/></div>
