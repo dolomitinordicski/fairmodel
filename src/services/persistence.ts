@@ -27,23 +27,37 @@ export function saveLocal(regions: Region[], updatedAt = Date.now()) {
 }
 
 export async function connectPersistence(local: PersistSnapshot | null) {
-  const db = getFirestore(initializeApp(firebaseConfig));
-  const ref = doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOC);
-  const snap = await getDoc(ref);
-  const cloud = snap.exists() ? snap.data() : null;
-  const cloudRegions = cloud?.regions;
-  const cloudTs = Number(cloud?.clientUpdatedAt || 0);
-  const localTs = Number(local?.updatedAt || 0);
-  let regions = local?.regions ?? DEFAULT_REGIONS;
-  let ts = localTs || Date.now();
-  if (validRegions(cloudRegions) && cloudTs > localTs) {
-    regions = cloudRegions;
-    ts = cloudTs || Date.now();
-    saveLocal(regions, ts);
-  } else {
-    await setDoc(ref, { regions, version: 2, clientUpdatedAt: ts, updatedAt: serverTimestamp() }, { merge: true });
+  try {
+    const db = getFirestore(initializeApp(firebaseConfig));
+    const ref = doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOC);
+    const snap = await getDoc(ref);
+    const cloud = snap.exists() ? snap.data() : null;
+    const cloudTs = Number(cloud?.clientUpdatedAt || 0);
+    const localTs = Number(local?.updatedAt || 0);
+    const cloudValid = validRegions(cloud?.regions);
+    let regions = local?.regions ?? DEFAULT_REGIONS;
+    let ts = localTs || Date.now();
+
+    if (cloudValid && cloudTs > localTs) {
+      regions = cloud.regions;
+      ts = cloudTs || Date.now();
+      saveLocal(regions, ts);
+    } else if (local && validRegions(local.regions)) {
+      await setDoc(ref, { regions, version: 2, clientUpdatedAt: ts, updatedAt: serverTimestamp() }, { merge: true });
+    } else if (cloudValid) {
+      regions = cloud.regions;
+      ts = cloudTs || Date.now();
+      saveLocal(regions, ts);
+    } else {
+      ts = Date.now();
+      saveLocal(regions, ts);
+      await setDoc(ref, { regions, version: 2, clientUpdatedAt: ts, updatedAt: serverTimestamp() }, { merge: true });
+    }
+    return { mode: 'firebase' as const, db, ref, regions, updatedAt: ts };
+  } catch (error) {
+    console.warn('Firebase unavailable; using local storage', error);
+    return { mode: 'local' as const, regions: local?.regions ?? DEFAULT_REGIONS, updatedAt: local?.updatedAt ?? Date.now() };
   }
-  return { mode: 'firebase' as const, db, ref, regions, updatedAt: ts };
 }
 
 export async function saveCloud(db: Firestore, ref: DocumentReference, regions: Region[], updatedAt = Date.now()) {
