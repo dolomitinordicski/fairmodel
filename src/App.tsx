@@ -1,4 +1,5 @@
 import logoUrl from '../logo1.png';
+import printLogoUrl from '../logo.png';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Region, SaveMode } from './types/fair';
 import { translations } from './i18n/translations';
