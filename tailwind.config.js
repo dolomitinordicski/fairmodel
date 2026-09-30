@@ -17,7 +17,8 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Segoe UI', 'Arial', 'sans-serif'],
+        sans: ['Roboto', 'Arial', 'sans-serif'],
+        display: ['Be Vietnam Pro', 'Arial', 'sans-serif'],
       },
     },
   },
