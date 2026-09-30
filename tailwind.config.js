@@ -17,8 +17,9 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Roboto', 'Arial', 'sans-serif'],
+        sans: ['Be Vietnam Pro', 'Arial', 'sans-serif'],
         display: ['Be Vietnam Pro', 'Arial', 'sans-serif'],
+        alt: ['Roboto', 'Arial', 'sans-serif'],
       },
     },
   },
