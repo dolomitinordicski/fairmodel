@@ -2,9 +2,7 @@ import { initializeApp } from 'firebase/app';
 import { doc, getDoc, getFirestore, serverTimestamp, setDoc } from 'firebase/firestore';
 import type { Region } from '../types/fair';
 import { DEFAULT_REGIONS, FIRESTORE_COLLECTION, FIRESTORE_DOC, STORAGE_KEY } from '../features/fair/constants';
-
-type FirebaseConfig = Record<string, string>;
-declare global { interface Window { FIREBASE_CONFIG?: FirebaseConfig } }
+import { firebaseConfig } from './firebaseConfig';
 
 export type PersistSnapshot = { regions: Region[]; updatedAt: number };
 
@@ -29,9 +27,7 @@ export function saveLocal(regions: Region[], updatedAt = Date.now()) {
 }
 
 export async function connectPersistence(local: PersistSnapshot | null) {
-  const cfg = window.FIREBASE_CONFIG;
-  if (!cfg?.projectId || !cfg?.apiKey) return { mode: 'local' as const, regions: local?.regions ?? DEFAULT_REGIONS, updatedAt: local?.updatedAt ?? Date.now() };
-  const db = getFirestore(initializeApp(cfg));
+  const db = getFirestore(initializeApp(firebaseConfig));
   const ref = doc(db, FIRESTORE_COLLECTION, FIRESTORE_DOC);
   const snap = await getDoc(ref);
   const cloud = snap.exists() ? snap.data() : null;
