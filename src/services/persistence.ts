@@ -95,6 +95,7 @@ export async function connectPersistence(local: PersistSnapshot | null) {
       saveLocal(regions, ts);
       await setDoc(ref, { regions, version: 3, billing: fairBilling(regions), clientUpdatedAt: ts, updatedAt: serverTimestamp() }, { merge: true });
     }
+    await setDoc(ref, { version: 3, billing: fairBilling(regions) }, { merge: true });
     return { mode: 'firebase' as const, db, ref, regions, updatedAt: ts };
   } catch (error) {
     console.warn('Firebase unavailable; using local storage', error);
