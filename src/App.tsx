@@ -15,6 +15,7 @@ import {
   DNS_SHARED_WEB_LOGO_URL,
   printDNSDocument,
 } from './services/foundation';
+import { probeDNSCoreHeader, type DNSCoreHeaderStatus } from './services/dnsCore';
 import {
   DNS_DATA_CONTRACTS,
   DNS_DATA_CONTRACTS_VERSION,
@@ -38,6 +39,7 @@ export default function App(){
   const [saveMode,setSaveMode]=useState<SaveMode>('waiting');
   const [saveAt,setSaveAt]=useState<number|null>(null);
   const [printMode,setPrintMode]=useState<FairPrintMode>('overview');
+  const [coreStatus,setCoreStatus]=useState<DNSCoreHeaderStatus>({state:'loading'});
   const persistence=useRef<any>(null);
   const hydrated=useRef(false);
   const t=translations[language];
@@ -45,7 +47,7 @@ export default function App(){
   const fairContract=DNS_DATA_CONTRACTS.find(contract=>contract.id==='fair');
 
   useEffect(()=>applyDNSFoundation(),[]);
-
+  useEffect(()=>{ void probeDNSCoreHeader().then(setCoreStatus); },[]);
 
   useEffect(()=>{(async()=>{try{
     const state=await connectPersistence(loadLocal());
@@ -83,17 +85,39 @@ export default function App(){
   }
 
   return <div className="min-h-screen flex flex-col">
-    <header id="dns-fair-header" className="sticky top-0 z-50 bg-dns-deep text-white px-4 py-3.5 md:px-[1.8rem] flex items-center justify-between gap-4 shadow-[0_1px_0_rgba(255,255,255,.08)]">
-      <div className="flex items-center gap-[18px] min-w-0">
-        <img src={DNS_SHARED_WEB_LOGO_URL} alt="Dolomiti NordicSki" className="h-10 w-auto block"/>
-        <div className="min-w-0">
-          <div className="font-display uppercase text-[21px] md:text-[23px] leading-none tracking-[.035em] text-white whitespace-nowrap"><span className="font-bold">DNS</span><span className="font-normal ml-2">FAIR</span></div>
-          <div className="font-alt text-[12px] md:text-[13px] font-normal uppercase tracking-[.035em] text-dns-light mt-1 leading-tight truncate">{t.subtitle}</div>
+    <header id="dns-fair-header" className="sticky top-0 z-30 bg-dns-deep text-white shadow-[0_1px_0_rgba(255,255,255,.08)]">
+      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-6 px-5 py-3.5 md:px-8">
+        <div className="flex min-w-0 items-center gap-4">
+          <img src={DNS_SHARED_WEB_LOGO_URL} alt="Dolomiti NordicSki" className="h-10 w-auto shrink-0 object-contain"/>
+          <div className="min-w-0">
+            <div className="text-[22px] uppercase tracking-[.035em] leading-none text-white whitespace-nowrap"><strong>DNS</strong> <span className="font-normal">FAIR</span></div>
+            <div className="mt-1.5 truncate font-alt text-[11px] font-normal uppercase leading-tight tracking-[.06em] text-dns-light">{t.subtitle}</div>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center gap-3 whitespace-nowrap">
-        <AccessibilityMount language={language}/>
-        <div>{(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} data-dns-press className={'ml-1 border-0 border-b-2 bg-transparent px-1 py-1 text-[10px] font-display font-semibold tracking-[.05em] text-white '+(language===l?'border-white':'border-transparent opacity-60')}>{l.toUpperCase()}</button>)}</div>
+        <div className="flex items-center gap-4 whitespace-nowrap">
+          <div className="flex items-center gap-3">
+            <AccessibilityMount language={language}/>
+            <div className="flex gap-3 text-[10px] font-bold uppercase tracking-[.06em]">
+              {(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} data-dns-press aria-pressed={language===l} className={'border-0 border-b-2 bg-transparent px-1 py-1 text-white '+(language===l?'border-white':'border-transparent opacity-60')}>{l.toUpperCase()}</button>)}
+            </div>
+          </div>
+          <div className={[
+            'hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-[.05em] xl:flex',
+            coreStatus.state === 'ready' ? 'text-[#d8f0e7]' : '',
+            coreStatus.state === 'error' ? 'text-[#ffd7d0]' : 'text-white/65',
+          ].join(' ')} aria-live="polite">
+            <span className={[
+              'h-2 w-2 rounded-full',
+              coreStatus.state === 'ready' ? 'bg-emerald-400' : '',
+              coreStatus.state === 'error' ? 'bg-orange-400' : 'bg-dns-light',
+            ].join(' ')}/>
+            {coreStatus.state === 'ready'
+              ? `${language==='de'?'DNS_Core verbunden':'DNS_Core connesso'} · ${coreStatus.reportingAreas}/${coreStatus.organizations}`
+              : coreStatus.state === 'error'
+                ? (language==='de'?'DNS_Core nicht erreichbar':'DNS_Core non raggiungibile')
+                : (language==='de'?'DNS_Core verbindet…':'Connessione a DNS_Core…')}
+          </div>
+        </div>
       </div>
     </header>
 
