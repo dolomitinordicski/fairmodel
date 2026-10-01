@@ -33,6 +33,7 @@ function fairBilling(regions: Region[]) {
       organizationId: FAIR_ORGANIZATION_IDS[name] ?? name,
       sourceLabel: name,
       reportingAreaLabel: group.reg,
+      distributionKey: variableShare,
       variableFee: Math.round(((area?.varFee ?? 0) * variableShare) * 100) / 100,
       fixedFee: Math.round(fixedFee * 100) / 100,
       totalAmount:
