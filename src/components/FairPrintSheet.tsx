@@ -2,7 +2,7 @@ import { createPortal } from 'react-dom';
 import type { FairResult, Language } from '../types/fair';
 import { FF, N, ORGANISATIONS, PREV } from '../features/fair/constants';
 import { fmt2, fmtE } from '../utils/formatting';
-import { RegionLabel } from './RegionLogos';
+import { OrganizationLabel, RegionLabel } from './RegionLogos';
 import { DNS_SHARED_PRINT_LOGO_URL } from '../services/foundation';
 
 export type FairPrintMode = 'overview' | 'final' | 'organisations';
@@ -143,7 +143,7 @@ export function FairPrintSheet({ mode, language, results }: FairPrintSheetProps)
       <tbody>
         {organisationRows.map((row) => (
           <tr key={row.region + row.organisation}>
-            <td>{row.organisation}</td>
+            <td><OrganizationLabel organizationName={row.organisation} print /></td>
             <td><RegionLabel fairName={row.region} print /></td>
             <td className="dns-print-number">{fmt2(row.key * 100)} %</td>
             <td className="dns-print-number">{fmtE(row.variableFee)}</td>
