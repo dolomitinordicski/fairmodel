@@ -30,7 +30,44 @@ export function FairPrintSheet({ mode, language, results }: FairPrintSheetProps)
       ? language === 'de' ? 'Jahresbeitrag 2027 — Organisationen' : 'Quota annuale 2027 — Organizzazioni'
       : mode === 'final'
         ? language === 'de' ? 'Jahresbeitrag 2027 — Partner' : 'Quota annuale 2027 — Partner'
-        : language === 'de' ? 'FAIR Modell — Übersicht 2027' : 'Modello FAIR — Riepilogo 2027';
+        : language === 'de' ? 'FAIR Modell — Ergebnis' : 'Modello FAIR — Risultato';
+
+  const resultTable = (
+    <table className="dns-print-table">
+      <thead>
+        <tr>
+          <th>{language === 'de' ? 'Partner' : 'Partner'}</th>
+          <th className="dns-print-number">PN w.</th>
+          <th className="dns-print-number">SWDNS w.</th>
+          <th className="dns-print-number">KP w.</th>
+          <th className="dns-print-number">SA w.</th>
+          <th className="dns-print-number">Score %</th>
+          <th className="dns-print-number">Variable Fee</th>
+        </tr>
+      </thead>
+      <tbody>
+        {results.map((row) => (
+          <tr key={row.name}>
+            <td><RegionLabel fairName={row.name} print /></td>
+            <td className="dns-print-number">{fmt2(row.pnW)}</td>
+            <td className="dns-print-number">{fmt2(row.swW)}</td>
+            <td className="dns-print-number">{fmt2(row.kpW)}</td>
+            <td className="dns-print-number">{fmt2(row.saW)}</td>
+            <td className="dns-print-number"><strong>{fmt2(row.score)} %</strong></td>
+            <td className="dns-print-number">{fmtE(row.varFee)}</td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <td>{language === 'de' ? 'Total' : 'Totale'}</td>
+          <td /><td /><td /><td />
+          <td className="dns-print-number">{fmt2(totalScore)} %</td>
+          <td className="dns-print-number">{fmtE(totalVF)}</td>
+        </tr>
+      </tfoot>
+    </table>
+  );
 
   const finalTable = (
     <table className="dns-print-table">
@@ -51,7 +88,7 @@ export function FairPrintSheet({ mode, language, results }: FairPrintSheetProps)
           const diff = total - PREV[index];
           return (
             <tr key={row.name}>
-              <td><RegionLabel fairName={row.name} compact /></td>
+              <td><RegionLabel fairName={row.name} print /></td>
               <td className="dns-print-number">{fmt2(row.score)} %</td>
               <td className="dns-print-number">{fmtE(row.varFee)}</td>
               <td className="dns-print-number">{fmtE(FF)}</td>
@@ -107,7 +144,7 @@ export function FairPrintSheet({ mode, language, results }: FairPrintSheetProps)
         {organisationRows.map((row) => (
           <tr key={row.region + row.organisation}>
             <td>{row.organisation}</td>
-            <td><RegionLabel fairName={row.region} compact /></td>
+            <td><RegionLabel fairName={row.region} print /></td>
             <td className="dns-print-number">{fmt2(row.key * 100)} %</td>
             <td className="dns-print-number">{fmtE(row.variableFee)}</td>
             <td className="dns-print-number">{fmtE(row.fixedFee)}</td>
@@ -138,18 +175,7 @@ export function FairPrintSheet({ mode, language, results }: FairPrintSheetProps)
         </div>
       </header>
 
-      {mode === 'overview' && (
-        <>
-          <div className="dns-print-meta" style={{ marginBottom: '3mm' }}>
-            {language === 'de'
-              ? 'FAIR-Verteilung und Jahresbeitrag'
-              : 'Distribuzione FAIR e quota annuale'}
-          </div>
-          {finalTable}
-          <div style={{ height: '5mm' }} />
-          {organisationTable}
-        </>
-      )}
+      {mode === 'overview' && resultTable}
       {mode === 'final' && finalTable}
       {mode === 'organisations' && organisationTable}
     </section>,
