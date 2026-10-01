@@ -124,8 +124,13 @@
     @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.05em] md:px-4 md:py-1.5 md:text-[11px];
   }
 
-  .dns-btn-primary { @apply dns-btn bg-dns-deep text-white hover:bg-dns-mid; }
-  .dns-btn-secondary { @apply dns-btn border border-dns-mid/20 bg-white text-dns-deep hover:bg-dns-deep/[.04]; }
+  .dns-btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-dns-deep px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.05em] text-white hover:bg-dns-mid md:px-4 md:py-1.5 md:text-[11px];
+  }
+
+  .dns-btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-dns-mid/20 bg-white px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.05em] text-dns-deep hover:bg-dns-deep/[.04] md:px-4 md:py-1.5 md:text-[11px];
+  }
 }
 
 @media (max-width: 767px) {
