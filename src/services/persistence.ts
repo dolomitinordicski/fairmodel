@@ -3,6 +3,7 @@ import { doc, getDoc, getFirestore, serverTimestamp, setDoc, type DocumentRefere
 import type { OrganisationGroup, Region } from '../types/fair';
 import { DEFAULT_REGIONS, FIRESTORE_COLLECTION, FIRESTORE_DOC, STORAGE_KEY } from '../features/fair/constants';
 import { calculateFairDistribution } from '../features/fair/calculations';
+import { resolveOrganizationId } from '@dolomitinordicski/dns-shared-data';
 import { firebaseConfig } from './firebaseConfig';
 
 export type PersistSnapshot = { regions: Region[]; updatedAt: number };
@@ -12,6 +13,7 @@ function fairBilling(regions: Region[], organisations: OrganisationGroup[]) {
   const organizations = organisations.flatMap((group) => {
     const area = results.find((result) => result.name === group.reg);
     return group.list.map(([name, variableShare, fixedFee]) => ({
+      organizationId: resolveOrganizationId(name) ?? name,
       sourceLabel: name,
       reportingAreaLabel: group.reg,
       distributionKey: variableShare,
