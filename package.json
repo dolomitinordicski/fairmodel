@@ -13,7 +13,7 @@
     "firebase": "^10.14.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#45a31ae6e724298e7ec7b339205441ffdf350e4c"
+    "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#caac3c6e247d9426a806f06142a77335b50ceb94"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
