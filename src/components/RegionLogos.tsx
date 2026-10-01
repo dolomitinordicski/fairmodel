@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { resolveReportingAreaId } from '@dolomitinordicski/dns-shared-data';
+import { resolveOrganizationId, resolveReportingAreaId } from '@dolomitinordicski/dns-shared-data';
 
 type ManifestAsset = {
   id: string;
@@ -44,12 +44,14 @@ function logoRank(asset: ManifestAsset) {
   return asset.priority === 'primary' ? 0 : asset.priority === 'secondary' ? 2 : 1;
 }
 
-export function RegionLogos({
-  fairName,
+export function EntityLogos({
+  entityType,
+  entityId,
   compact = false,
   print = false,
 }: {
-  fairName: string;
+  entityType: 'reportingArea' | 'destination' | 'organization';
+  entityId: string;
   compact?: boolean;
   print?: boolean;
 }) {
@@ -65,20 +67,19 @@ export function RegionLogos({
     };
   }, []);
 
-  const logos = useMemo(() => {
-    const reportingAreaId = resolveReportingAreaId(fairName);
-    if (!reportingAreaId) return [];
-
-    return assets
-      .filter((asset) =>
-        asset.entityBindings?.some(
-          (binding) =>
-            binding.entityType === 'reportingArea' &&
-            binding.entityId === reportingAreaId,
-        ),
-      )
-      .sort((a, b) => logoRank(a) - logoRank(b));
-  }, [assets, fairName]);
+  const logos = useMemo(
+    () =>
+      assets
+        .filter((asset) =>
+          asset.entityBindings?.some(
+            (binding) =>
+              binding.entityType === entityType &&
+              binding.entityId === entityId,
+          ),
+        )
+        .sort((a, b) => logoRank(a) - logoRank(b)),
+    [assets, entityType, entityId],
+  );
 
   if (!logos.length) return null;
 
@@ -97,6 +98,20 @@ export function RegionLogos({
   );
 }
 
+export function RegionLogos({
+  fairName,
+  compact = false,
+  print = false,
+}: {
+  fairName: string;
+  compact?: boolean;
+  print?: boolean;
+}) {
+  const reportingAreaId = resolveReportingAreaId(fairName);
+  if (!reportingAreaId) return null;
+  return <EntityLogos entityType="reportingArea" entityId={reportingAreaId} compact={compact} print={print} />;
+}
+
 export function RegionLabel({
   fairName,
   compact = false,
@@ -110,6 +125,27 @@ export function RegionLabel({
     <span className="dns-region-label">
       <RegionLogos fairName={fairName} compact={compact} print={print} />
       <span>{fairName}</span>
+    </span>
+  );
+}
+
+export function OrganizationLabel({
+  organizationName,
+  compact = false,
+  print = false,
+}: {
+  organizationName: string;
+  compact?: boolean;
+  print?: boolean;
+}) {
+  const organizationId = resolveOrganizationId(organizationName);
+
+  return (
+    <span className="dns-region-label">
+      {organizationId ? (
+        <EntityLogos entityType="organization" entityId={organizationId} compact={compact} print={print} />
+      ) : null}
+      <span>{organizationName}</span>
     </span>
   );
 }

@@ -7,7 +7,7 @@ import { fmt2, fmtE, fmtInputInt, parseFormattedInt } from './utils/formatting';
 import { connectPersistence, loadLocal, saveCloud, saveLocal } from './services/persistence';
 import { AccessibilityMount } from './components/AccessibilityMount';
 import { NavigationRuntimeMount } from './components/NavigationRuntimeMount';
-import { RegionLabel } from './components/RegionLogos';
+import { OrganizationLabel, RegionLabel } from './components/RegionLogos';
 import { FairPrintSheet, type FairPrintMode } from './components/FairPrintSheet';
 import {
   applyDNSFoundation,
@@ -156,7 +156,7 @@ export default function App(){
 
       <section id="fair-organisations" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.orgs}</SectionTitle>
-      <div className="dns-table-wrap"><table className="dns-table"><thead><tr><th>{t.organisation}</th><th>{t.region}</th><th>{t.key}</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th></tr></thead><tbody>{ORGANISATIONS.flatMap(g=>{const area=results.find(r=>r.name===g.reg);return g.list.map((o,i)=>{const vf=(area?.varFee||0)*o[1],tot=vf+o[2];return <tr key={g.reg+o[0]}><td>{o[0]}</td>{i===0?<td rowSpan={g.list.length} className="dns-region-group-cell"><RegionLabel fairName={g.reg}/></td>:null}<td className="text-right">{fmt2(o[1]*100)} %</td><td className="text-right font-bold text-dns-positive">{fmtE(vf)}</td><td className="text-right">{fmtE(o[2])}</td><td className="text-right font-bold text-dns-deep">{fmtE(tot)}</td></tr>;});})}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td></td><td className="text-right">100,00 %</td><td className="text-right">{fmtE(orgTotals.vf)}</td><td className="text-right">{fmtE(orgTotals.ff)}</td><td className="text-right">{fmtE(orgTotals.total)}</td></tr></tfoot></table></div>
+      <div className="dns-table-wrap"><table className="dns-table"><thead><tr><th>{t.organisation}</th><th>{t.region}</th><th>{t.key}</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th></tr></thead><tbody>{ORGANISATIONS.flatMap(g=>{const area=results.find(r=>r.name===g.reg);return g.list.map((o,i)=>{const vf=(area?.varFee||0)*o[1],tot=vf+o[2];return <tr key={g.reg+o[0]}><td><OrganizationLabel organizationName={o[0]}/></td>{i===0?<td rowSpan={g.list.length} className="dns-region-group-cell"><RegionLabel fairName={g.reg}/></td>:null}<td className="text-right">{fmt2(o[1]*100)} %</td><td className="text-right font-bold text-dns-positive">{fmtE(vf)}</td><td className="text-right">{fmtE(o[2])}</td><td className="text-right font-bold text-dns-deep">{fmtE(tot)}</td></tr>;});})}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td></td><td className="text-right">100,00 %</td><td className="text-right">{fmtE(orgTotals.vf)}</td><td className="text-right">{fmtE(orgTotals.ff)}</td><td className="text-right">{fmtE(orgTotals.total)}</td></tr></tfoot></table></div>
       </section>
     </main>
     <footer className="bg-dns-deep px-4 md:px-[1.8rem] py-3 font-alt"><div className="max-w-[1100px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] md:text-[11px] uppercase tracking-[.04em] text-white/65"><span>Dolomiti NordicSki</span><span>DNS FAIR · Foundation v{DNS_FAIR_FOUNDATION_VERSION} · Data Contracts v{DNS_DATA_CONTRACTS_VERSION} · {fairContract?.status ?? 'fair'} · © {new Date().getFullYear()}</span></div></footer>
