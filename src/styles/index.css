@@ -52,6 +52,16 @@
     min-width: 0;
   }
 
+  .dns-region-group-cell {
+    min-width: 165px;
+    vertical-align: middle !important;
+    background: rgba(170,208,209,.08);
+  }
+
+  .dns-region-group-cell .dns-region-label {
+    align-items: center;
+  }
+
   .dns-region-logos {
     display: inline-flex;
     align-items: center;
