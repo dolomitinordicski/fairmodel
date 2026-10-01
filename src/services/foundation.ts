@@ -1,15 +1,17 @@
 import { DNS_DESIGN_SYSTEM } from '@dolomitinordicski/dns-shared-data/design-system';
-import {
-  initDNSInteractionRuntime,
-} from '@dolomitinordicski/dns-shared-data/ui/interaction';
-import {
-  initDNSRevealRuntime,
-} from '@dolomitinordicski/dns-shared-data/ui/motion';
+import { initDNSInteractionRuntime } from '@dolomitinordicski/dns-shared-data/ui/interaction';
+import { initDNSRevealRuntime } from '@dolomitinordicski/dns-shared-data/ui/motion';
+import { initDNSPrintRuntime } from '@dolomitinordicski/dns-shared-data/ui/print';
 
 export const DNS_FAIR_FOUNDATION_VERSION = DNS_DESIGN_SYSTEM.version;
 
-export const DNS_SHARED_WEB_LOGO_URL =
-  'https://raw.githubusercontent.com/dolomitinordicski/dns-shared-data/main/brand/logo-web.png';
+const SHARED_BRAND_BASE =
+  'https://dolomitinordicski.github.io/dns-shared-data/brand';
+
+export const DNS_SHARED_WEB_LOGO_URL = `${SHARED_BRAND_BASE}/logo-web.png`;
+export const DNS_SHARED_PRINT_LOGO_URL = `${SHARED_BRAND_BASE}/logo.png`;
+
+let printRuntime: ReturnType<typeof initDNSPrintRuntime> | null = null;
 
 export function applyDNSFoundation() {
   const ds = DNS_DESIGN_SYSTEM;
@@ -30,6 +32,7 @@ export function applyDNSFoundation() {
     motion: ds.motion,
   });
   const reveal = initDNSRevealRuntime({ motion: ds.motion });
+  printRuntime = initDNSPrintRuntime({ print: ds.print });
 
   document.body.dataset.dnsDesignVersion = ds.version;
   document.body.dataset.dnsDesignSource = 'package';
@@ -37,5 +40,11 @@ export function applyDNSFoundation() {
   return () => {
     interaction.disconnect();
     reveal.disconnect();
+    printRuntime?.disconnect();
+    printRuntime = null;
   };
+}
+
+export function printDNSDocument() {
+  printRuntime?.printNow();
 }
