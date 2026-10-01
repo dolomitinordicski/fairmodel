@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Region, SaveMode } from './types/fair';
 import { translations } from './i18n/translations';
 import { calculateFairDistribution } from './features/fair/calculations';
-import { DEFAULT_REGIONS, FF, N, ORGANISATIONS, PREV } from './features/fair/constants';
+import { DEFAULT_REGIONS, FF, N, PREV } from './features/fair/constants';
 import { fmt2, fmtE, fmtInputInt, parseFormattedInt } from './utils/formatting';
 import { connectPersistence, loadLocal, saveCloud, saveLocal } from './services/persistence';
 import { AccessibilityMount } from './components/AccessibilityMount';
@@ -14,11 +14,15 @@ import {
   DNS_SHARED_WEB_LOGO_URL,
   printDNSDocument,
 } from './services/foundation';
-import { probeDNSCoreHeader, type DNSCoreHeaderStatus } from './services/dnsCore';
+import { loadDNSAreaAllocationKeys, probeDNSCoreHeader, type DNSCoreHeaderStatus } from './services/dnsCore';
 import {
   DNS_DATA_CONTRACTS,
   DNS_DATA_CONTRACTS_VERSION,
 } from '@dolomitinordicski/dns-shared-data/data-contracts';
+import {
+  ORGANIZATIONS,
+  resolveReportingAreaId,
+} from '@dolomitinordicski/dns-shared-data';
 
 const SectionTitle=({children}:{children:React.ReactNode})=><h2 className="font-display text-[11px] font-bold text-dns-deep uppercase tracking-[.07em] mt-4 md:mt-5 mb-2">{children}</h2>;
 const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="bg-white rounded-[10px] border-t-[3px] border-t-dns-light p-3 md:px-4 md:py-3 shadow-[0_1px_4px_rgba(13,77,94,.07)]"><div className="font-display text-[10px] font-bold uppercase tracking-[.07em] text-dns-mid mb-1">{label}</div><div className="font-display text-[20px] md:text-[21px] leading-none font-bold text-dns-deep">{value}</div>{sub&&<div className="font-alt text-[10px] text-dns-muted mt-1">{sub}</div>}</div>;
@@ -39,6 +43,7 @@ export default function App(){
   const [saveAt,setSaveAt]=useState<number|null>(null);
   const [printMode,setPrintMode]=useState<FairPrintMode>('overview');
   const [coreStatus,setCoreStatus]=useState<DNSCoreHeaderStatus>({state:'loading'});
+  const [organisationGroups,setOrganisationGroups]=useState<import('./types/fair').OrganisationGroup[]>([]);
   const persistence=useRef<any>(null);
   const hydrated=useRef(false);
   const t=translations[language];
@@ -47,6 +52,24 @@ export default function App(){
 
   useEffect(()=>applyDNSFoundation(),[]);
   useEffect(()=>{ void probeDNSCoreHeader().then(setCoreStatus); },[]);
+  useEffect(()=>{ void loadDNSAreaAllocationKeys('2026-27').then((keys)=>{
+    const groups = keys.filter((key)=>key.active).flatMap((key)=>{
+      const region = DEFAULT_REGIONS.find((candidate)=>resolveReportingAreaId(candidate.name)===key.reportingAreaId);
+      if(!region) return [];
+      return [{
+        reg: region.name,
+        list: key.allocations.map((allocation)=>{
+          const organization = ORGANIZATIONS.find((candidate)=>candidate.id===allocation.organizationId);
+          return [
+            organization?.canonicalName ?? allocation.organizationId,
+            allocation.share,
+            FF * allocation.fixedShare,
+          ] as [string, number, number];
+        }),
+      }];
+    });
+    setOrganisationGroups(groups);
+  }).catch((error)=>{ console.warn('DNS_Core allocation keys unavailable', error); setCoreStatus({state:'error'}); }); },[]);
 
   useEffect(()=>{(async()=>{try{
     const state=await connectPersistence(loadLocal());
@@ -58,10 +81,10 @@ export default function App(){
 
   useEffect(()=>{if(!hydrated.current)return; const id=window.setTimeout(async()=>{const now=Date.now();try{
     saveLocal(regions,now);
-    if(persistence.current?.mode==='firebase'){setSaveMode('waiting');await saveCloud(persistence.current.db,persistence.current.ref,regions,now);setSaveMode('cloud');}
+    if(persistence.current?.mode==='firebase'){setSaveMode('waiting');await saveCloud(persistence.current.db,persistence.current.ref,regions,organisationGroups,now);setSaveMode('cloud');}
     else setSaveMode('local');
     setSaveAt(now);
-  }catch(e){console.warn(e);setSaveMode('error');setSaveAt(now);}},350);return()=>window.clearTimeout(id);},[regions]);
+  }catch(e){console.warn(e);setSaveMode('error');setSaveAt(now);}},350);return()=>window.clearTimeout(id);},[regions,organisationGroups]);
 
   const stamp=saveAt?new Date(saveAt).toLocaleTimeString(language==='de'?'de-DE':'it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';
   const statusText=(saveMode==='cloud'?t.cloud:saveMode==='waiting'?t.waiting:saveMode==='error'?t.error:t.local)+(stamp?' · '+stamp:'');
@@ -74,7 +97,7 @@ export default function App(){
   const totalScore=results.reduce((s,r)=>s+r.score,0), totalVF=results.reduce((s,r)=>s+r.varFee,0);
   const maxR=results.reduce((a,b)=>b.varFee>a.varFee?b:a,results[0]);
   const totalAll=results.reduce((s,r)=>s+r.varFee+FF,0), totalPrev=PREV.reduce((s,v)=>s+v,0);
-  const orgTotals=ORGANISATIONS.reduce((acc,g)=>{const area=results.find(r=>r.name===g.reg);g.list.forEach(o=>{const vf=(area?.varFee||0)*o[1];acc.vf+=vf;acc.ff+=o[2];acc.total+=vf+o[2];});return acc;},{vf:0,ff:0,total:0});
+  const orgTotals=organisationGroups.reduce((acc,g)=>{const area=results.find(r=>r.name===g.reg);g.list.forEach(o=>{const vf=(area?.varFee||0)*o[1];acc.vf+=vf;acc.ff+=o[2];acc.total+=vf+o[2];});return acc;},{vf:0,ff:0,total:0});
 
   function requestPrint(mode: FairPrintMode) {
     setPrintMode(mode);
@@ -175,10 +198,10 @@ export default function App(){
 
       <section id="fair-organisations" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.orgs}</SectionTitle>
-      <div className="dns-table-wrap"><table className="dns-table"><thead><tr><th>{t.organisation}</th><th>{t.region}</th><th>{t.key}</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th></tr></thead><tbody>{ORGANISATIONS.flatMap(g=>{const area=results.find(r=>r.name===g.reg);return g.list.map((o,i)=>{const vf=(area?.varFee||0)*o[1],tot=vf+o[2];return <tr key={g.reg+o[0]}><td><OrganizationLabel organizationName={o[0]}/></td>{i===0?<td rowSpan={g.list.length} className="dns-region-group-cell"><RegionLabel fairName={g.reg}/></td>:null}<td className="text-right">{fmt2(o[1]*100)} %</td><td className="text-right font-bold text-dns-positive">{fmtE(vf)}</td><td className="text-right">{fmtE(o[2])}</td><td className="text-right font-bold text-dns-deep">{fmtE(tot)}</td></tr>;});})}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td></td><td className="text-right">100,00 %</td><td className="text-right">{fmtE(orgTotals.vf)}</td><td className="text-right">{fmtE(orgTotals.ff)}</td><td className="text-right">{fmtE(orgTotals.total)}</td></tr></tfoot></table></div>
+      <div className="dns-table-wrap"><table className="dns-table"><thead><tr><th>{t.organisation}</th><th>{t.region}</th><th>{t.key}</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th></tr></thead><tbody>{organisationGroups.flatMap(g=>{const area=results.find(r=>r.name===g.reg);return g.list.map((o,i)=>{const vf=(area?.varFee||0)*o[1],tot=vf+o[2];return <tr key={g.reg+o[0]}><td><OrganizationLabel organizationName={o[0]}/></td>{i===0?<td rowSpan={g.list.length} className="dns-region-group-cell"><RegionLabel fairName={g.reg}/></td>:null}<td className="text-right">{fmt2(o[1]*100)} %</td><td className="text-right font-bold text-dns-positive">{fmtE(vf)}</td><td className="text-right">{fmtE(o[2])}</td><td className="text-right font-bold text-dns-deep">{fmtE(tot)}</td></tr>;});})}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td></td><td className="text-right">100,00 %</td><td className="text-right">{fmtE(orgTotals.vf)}</td><td className="text-right">{fmtE(orgTotals.ff)}</td><td className="text-right">{fmtE(orgTotals.total)}</td></tr></tfoot></table></div>
       </section>
     </main>
     <footer className="bg-dns-deep px-4 md:px-[1.8rem] py-3 font-alt"><div className="max-w-[1100px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] md:text-[11px] uppercase tracking-[.04em] text-white/65"><span>Dolomiti NordicSki</span><span>DNS FAIR · Foundation v{DNS_FAIR_FOUNDATION_VERSION} · Data Contracts v{DNS_DATA_CONTRACTS_VERSION} · {fairContract?.status ?? 'fair'} · © {new Date().getFullYear()}</span></div></footer>
-    <FairPrintSheet mode={printMode} language={language} results={results} />
+    <FairPrintSheet mode={printMode} language={language} results={results} organisations={organisationGroups} />
   </div>;
 }
