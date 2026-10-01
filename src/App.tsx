@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Region, SaveMode } from './types/fair';
 import { translations } from './i18n/translations';
 import { calculateFairDistribution } from './features/fair/calculations';
-import { DEFAULT_REGIONS, FF, ORGANISATIONS, PREV } from './features/fair/constants';
+import { DEFAULT_REGIONS, FF, N, ORGANISATIONS, PREV } from './features/fair/constants';
 import { fmt2, fmtE, fmtInputInt, parseFormattedInt } from './utils/formatting';
 import { connectPersistence, loadLocal, saveCloud, saveLocal } from './services/persistence';
 import { AccessibilityMount } from './components/AccessibilityMount';
