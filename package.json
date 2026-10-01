@@ -13,17 +13,16 @@
     "firebase": "^10.14.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#74c41e60de96aef7b3e91691a2e5535181fa6138"
+    "@dolomitinordicski/dns-shared-data": "github:dolomitinordicski/dns-shared-data#b7dd29217f3669e56dfc2f0eddc21f11dd4ea72f"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "autoprefixer": "^10.4.20",
-    "postcss": "^8.4.41",
-    "tailwindcss": "^3.4.10",
-    "typescript": "^5.5.4",
-    "vite": "^5.4.3",
-    "vitest": "^2.1.1"
+    "@vitejs/plugin-react": "^5.0.2",
+    "tailwindcss": "^4.1.13",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.7",
+    "vitest": "^2.1.1",
+    "@tailwindcss/vite": "^4.1.13"
   }
 }

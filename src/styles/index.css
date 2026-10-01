@@ -1,21 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Compile-time fallbacks mirror DNS_DESIGN_SYSTEM.
+   Runtime values are applied by src/services/foundation.ts. */
+@theme {
+  --color-dns-deep: #0D4D5E;
+  --color-dns-mid: #417483;
+  --color-dns-light: #AAD0D1;
+  --color-dns-bg: #F4F8F9;
+  --color-dns-surface: #FFFFFF;
+  --color-dns-muted: #5A7F8A;
+  --color-dns-border: rgba(65,116,131,.20);
+  --color-dns-positive: #0F6E56;
+  --color-dns-negative: #993C1D;
+  --font-display: "Be Vietnam Pro", sans-serif;
+  --font-alt: "Roboto", sans-serif;
+}
 
 @layer base {
-  :root {
-    --color-dns-deep: #0D4D5E;
-    --color-dns-mid: #417483;
-    --color-dns-light: #AAD0D1;
-    --color-dns-bg: #F4F8F9;
-    --color-dns-surface: #FFFFFF;
-    --color-dns-muted: #5A7F8A;
-    --color-dns-border: rgba(65,116,131,.20);
-  }
   * { box-sizing: border-box; }
-  body { @apply m-0 bg-[#f4f8f9] text-dns-deep font-display text-[13px]; }
+  body {
+    margin: 0;
+    background: var(--color-dns-bg);
+    color: var(--color-dns-deep);
+    font-family: var(--font-display);
+    font-size: 13px;
+  }
   button, input { font: inherit; }
 }
 
@@ -33,10 +43,10 @@
     display: inline-flex;
     align-items: center;
     padding: .25rem .6rem;
-    border: 1px solid rgba(170,208,209,.65);
+    border: 1px solid var(--color-dns-light);
     border-radius: var(--dns-control-radius, 6px);
-    background: #AAD0D1;
-    color: #0D4D5E;
+    background: var(--color-dns-light);
+    color: var(--color-dns-deep);
     font-size: 9px;
     font-weight: 700;
     line-height: 1.2;
@@ -55,11 +65,7 @@
   .dns-region-group-cell {
     min-width: 165px;
     vertical-align: middle !important;
-    background: rgba(170,208,209,.08);
-  }
-
-  .dns-region-group-cell .dns-region-label {
-    align-items: center;
+    background: color-mix(in srgb, var(--color-dns-light) 8%, transparent);
   }
 
   .dns-region-logos {
@@ -81,38 +87,54 @@
     height: 22px;
   }
 
-  .dns-note { @apply bg-white border-l-4 border-dns-light rounded-[10px] px-3 py-2.5 text-[10px] md:text-[11px] text-dns-muted leading-relaxed mb-4 shadow-[0_1px_4px_rgba(13,77,94,.05)]; }
+  .dns-note {
+    @apply mb-4 rounded-[10px] border-l-4 border-dns-light bg-white px-3 py-2.5 text-[10px] leading-relaxed text-dns-muted shadow-[0_1px_4px_rgba(13,77,94,.05)] md:text-[11px];
+  }
 
-  .dns-table-wrap { @apply bg-white rounded-[10px] shadow-[0_1px_4px_rgba(13,77,94,.07)] overflow-x-auto overflow-y-hidden mb-4; }
-  .dns-table { @apply w-full border-collapse min-w-[720px] md:min-w-[760px]; }
+  .dns-table-wrap {
+    @apply mb-4 overflow-x-auto overflow-y-hidden rounded-[10px] bg-white shadow-[0_1px_4px_rgba(13,77,94,.07)];
+  }
+
+  .dns-table {
+    @apply w-full min-w-[720px] border-collapse md:min-w-[760px];
+  }
+
   .dns-table thead { @apply bg-white; }
-  .dns-table th { @apply font-display px-2.5 py-2 text-[9px] font-bold uppercase tracking-[.06em] text-dns-mid text-left border-b border-dns-mid/20; }
+
+  .dns-table th {
+    @apply border-b border-dns-mid/20 px-2.5 py-2 text-left font-display text-[9px] font-bold uppercase tracking-[.06em] text-dns-mid;
+  }
+
   .dns-table th:not(:first-child) { @apply text-right; }
-  .dns-table td { @apply px-2.5 py-1.5 align-middle border-b border-dns-mid/10 text-[11px] text-dns-deep; }
-  .dns-table td:not(:first-child) { @apply font-alt text-right; }
+
+  .dns-table td {
+    @apply border-b border-dns-mid/10 px-2.5 py-1.5 align-middle text-[11px] text-dns-deep;
+  }
+
+  .dns-table td:not(:first-child) { @apply text-right font-alt; }
   .dns-table tbody tr:hover { @apply bg-dns-deep/[.025]; }
   .dns-table td:first-child { @apply font-display font-medium text-dns-deep; }
   .dns-table tfoot { @apply bg-dns-deep/[.04]; }
 
-  .dns-input { @apply font-alt w-[92px] md:w-[100px] border border-dns-mid/20 rounded px-2 py-1.5 md:py-1 text-[11px] text-right bg-white text-dns-deep focus:outline-none focus:border-dns-mid focus:ring-1 focus:ring-dns-mid/15; }
+  .dns-input {
+    @apply w-[92px] rounded border border-dns-mid/20 bg-white px-2 py-1.5 text-right font-alt text-[11px] text-dns-deep focus:border-dns-mid focus:outline-none focus:ring-1 focus:ring-dns-mid/15 md:w-[100px] md:py-1;
+  }
 
-  .dns-btn { @apply rounded-md px-3 md:px-4 py-2 md:py-1.5 text-[10px] md:text-[11px] font-display font-semibold uppercase tracking-[.05em] inline-flex items-center justify-center gap-1.5; }
-  .dns-btn-primary { @apply dns-btn bg-dns-deep text-white hover:bg-dns-mid; }
-  .dns-btn-secondary { @apply dns-btn bg-white text-dns-deep border border-dns-mid/20 hover:bg-dns-deep/[.04]; }
-}
+  .dns-btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.05em] md:px-4 md:py-1.5 md:text-[11px];
+  }
 
-@media print {
-  body { background: white; }
-  .print-hide { display:none!important; }
-  .print-main { padding:8px 12px!important; }
+  .dns-btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-dns-deep px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.05em] text-white hover:bg-dns-mid md:px-4 md:py-1.5 md:text-[11px];
+  }
+
+  .dns-btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-dns-mid/20 bg-white px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.05em] text-dns-deep hover:bg-dns-deep/[.04] md:px-4 md:py-1.5 md:text-[11px];
+  }
 }
 
 @media (max-width: 767px) {
   .dns-region-label { gap: .4rem; }
   .dns-region-logo { width: 38px; height: 25px; }
   .dns-region-logos.is-compact .dns-region-logo { width: 30px; height: 20px; }
-}
-
-@media print {
-  .dns-region-logo { width: 30px; height: 20px; }
 }
