@@ -24,3 +24,8 @@ Tool-specific behavior remains local:
 ## Calculation-engine protection
 
 `src/features/fair/calculations.ts` is intentionally outside the Foundation rollout. The parity tests in `src/features/fair/calculations.test.ts` must remain green for every UI/Foundation migration.
+
+
+### Shared regional logos
+
+FAIR resolves reporting-area logos from the canonical Shared Data manifest at `dns-shared-data/brand/regions/manifest.json`. No regional logo files are copied into this repository. Legacy FAIR area names are resolved through the canonical reporting-area alias map before matching manifest bindings.
