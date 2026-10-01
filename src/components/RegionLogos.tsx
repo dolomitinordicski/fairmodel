@@ -47,9 +47,11 @@ function logoRank(asset: ManifestAsset) {
 export function RegionLogos({
   fairName,
   compact = false,
+  print = false,
 }: {
   fairName: string;
   compact?: boolean;
+  print?: boolean;
 }) {
   const [assets, setAssets] = useState<ManifestAsset[]>([]);
 
@@ -85,7 +87,7 @@ export function RegionLogos({
       {logos.map((asset) => (
         <img
           key={asset.id}
-          className="dns-region-logo"
+          className={print ? 'dns-print-region-logo' : 'dns-region-logo'}
           src={`${ASSET_BASE_URL}/${asset.filename}`}
           alt={asset.label}
           loading="lazy"
@@ -98,13 +100,15 @@ export function RegionLogos({
 export function RegionLabel({
   fairName,
   compact = false,
+  print = false,
 }: {
   fairName: string;
   compact?: boolean;
+  print?: boolean;
 }) {
   return (
     <span className="dns-region-label">
-      <RegionLogos fairName={fairName} compact={compact} />
+      <RegionLogos fairName={fairName} compact={compact} print={print} />
       <span>{fairName}</span>
     </span>
   );
