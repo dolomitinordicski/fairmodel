@@ -2,6 +2,7 @@ import { DNS_DESIGN_SYSTEM } from '@dolomitinordicski/dns-shared-data/design-sys
 import { initDNSInteractionRuntime } from '@dolomitinordicski/dns-shared-data/ui/interaction';
 import { initDNSRevealRuntime } from '@dolomitinordicski/dns-shared-data/ui/motion';
 import { initDNSPrintRuntime } from '@dolomitinordicski/dns-shared-data/ui/print';
+import { initDNSToolChromeRuntime } from '@dolomitinordicski/dns-shared-data/ui/tool-chrome';
 
 export const DNS_FAIR_FOUNDATION_VERSION = DNS_DESIGN_SYSTEM.version;
 
@@ -32,12 +33,19 @@ export function applyDNSFoundation() {
     motion: ds.motion,
   });
   const reveal = initDNSRevealRuntime({ motion: ds.motion });
+  const chrome = initDNSToolChromeRuntime({
+    navigation: ds.navigation,
+    responsive: ds.responsive,
+    headerTokens: ds.header,
+    motion: ds.motion,
+  });
   printRuntime = initDNSPrintRuntime({ print: ds.print });
 
   document.body.dataset.dnsDesignVersion = ds.version;
   document.body.dataset.dnsDesignSource = 'package';
 
   return () => {
+    chrome.disconnect();
     interaction.disconnect();
     reveal.disconnect();
     printRuntime?.disconnect();

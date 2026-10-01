@@ -6,7 +6,6 @@ import { DEFAULT_REGIONS, FF, N, ORGANISATIONS, PREV } from './features/fair/con
 import { fmt2, fmtE, fmtInputInt, parseFormattedInt } from './utils/formatting';
 import { connectPersistence, loadLocal, saveCloud, saveLocal } from './services/persistence';
 import { AccessibilityMount } from './components/AccessibilityMount';
-import { NavigationRuntimeMount } from './components/NavigationRuntimeMount';
 import { OrganizationLabel, RegionLabel } from './components/RegionLogos';
 import { FairPrintSheet, type FairPrintMode } from './components/FairPrintSheet';
 import {
@@ -85,7 +84,7 @@ export default function App(){
   }
 
   return <div className="min-h-screen flex flex-col">
-    <header id="dns-fair-header" className="sticky top-0 z-30 bg-dns-deep text-white shadow-[0_1px_0_rgba(255,255,255,.08)]">
+    <header data-dns-tool-header id="dns-fair-header" className="bg-dns-deep text-white shadow-[0_1px_0_rgba(255,255,255,.08)]">
       <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-6 px-5 py-3.5 md:px-8">
         <div className="flex min-w-0 items-center gap-4">
           <img src={DNS_SHARED_WEB_LOGO_URL} alt="Dolomiti NordicSki" className="h-10 w-auto shrink-0 object-contain"/>
@@ -121,10 +120,7 @@ export default function App(){
       </div>
     </header>
 
-    <nav id="dns-fair-nav" className="dns-tab-nav" aria-label="FAIR">
-      <div id="dns-scroll-progress" className="dns-scroll-progress-track" role="progressbar" aria-label="Page scroll progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={0}>
-        <span id="dns-scroll-progress-bar" className="dns-scroll-progress-bar"/>
-      </div>
+    <nav data-dns-tool-nav id="dns-fair-nav" className="dns-tab-nav" aria-label="FAIR">
       <div className="dns-tab-nav-inner">
         <div className="dns-tab-season-wrap"><span className="dns-tab-season">FAIR · WS 2026/27</span></div>
         {[
@@ -137,7 +133,6 @@ export default function App(){
         ].map(([id,label])=><a key={id} href={'#'+id} data-section={id} className="dns-tab">{label}</a>)}
       </div>
     </nav>
-    <NavigationRuntimeMount />
     <main className="flex-1 p-3 md:px-6 md:py-4 max-w-[1100px] w-full mx-auto">
       <div className="flex flex-wrap gap-2 items-center mb-4">
         <button className="dns-btn-primary" onClick={()=>requestPrint('overview')}>⬇ {t.print}</button>
