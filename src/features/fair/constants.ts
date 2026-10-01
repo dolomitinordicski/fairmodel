@@ -1,4 +1,4 @@
-import type { OrganisationGroup, Region } from '../../types/fair';
+import type { Region } from '../../types/fair';
 
 export const VF = 45000;
 export const FF = 7500;
@@ -20,17 +20,6 @@ export const DEFAULT_REGIONS: Region[] = [
   { name: 'Antholzertal', PN: 182878, SW: 722, KP: 79, SA: 9 },
   { name: 'Ahrntal / Sand in Taufers', PN: 692590, SW: 230, KP: 9, SA: 10 },
   { name: 'Seiser Alm / Val Gardena', PN: 2410724, SW: 35, KP: 3, SA: 9 },
-];
-
-export const ORGANISATIONS: OrganisationGroup[] = [
-  { reg: 'Osttirol', list: [['Osttirol', 1.00, 7500]] },
-  { reg: '3 Zinnen Dolomites', list: [['TV Sexten', 0.28, 1500], ['TV Innichen', 0.28, 1500], ['TV Toblach', 0.28, 1500], ['TV Niederdorf', 0.08, 1500], ['TV Prags', 0.08, 1500]] },
-  { reg: "Cortina d'Ampezzo", list: [["Cortina d'Ampezzo", 1.00, 7500]] },
-  { reg: 'Comelico', list: [['Comelico', 1.00, 7500]] },
-  { reg: 'Gsiesertal / Welsberg / Taisten', list: [['Gsiesertal / Welsberg / Taisten', 1.00, 7500]] },
-  { reg: 'Antholzertal', list: [['Antholzertal', 0.50, 3750], ['Biathlon Antholz', 0.50, 3750]] },
-  { reg: 'Ahrntal / Sand in Taufers', list: [['Ahrntal', 0.50, 3750], ['Sand in Taufers', 0.50, 3750]] },
-  { reg: 'Seiser Alm / Val Gardena', list: [['Seiser Alm', 0.50, 3750], ['Val Gardena', 0.50, 3750]] },
 ];
 
 export const STORAGE_KEY = 'dns-fairmodel-ws-2026-27';

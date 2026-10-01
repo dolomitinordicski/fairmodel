@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
-import type { FairResult, Language } from '../types/fair';
-import { FF, N, ORGANISATIONS, PREV } from '../features/fair/constants';
+import type { FairResult, Language, OrganisationGroup } from '../types/fair';
+import { FF, N, PREV } from '../features/fair/constants';
 import { fmt2, fmtE } from '../utils/formatting';
 import { OrganizationLabel, RegionLabel } from './RegionLogos';
 import { DNS_SHARED_PRINT_LOGO_URL } from '../services/foundation';
@@ -11,9 +11,10 @@ interface FairPrintSheetProps {
   mode: FairPrintMode;
   language: Language;
   results: FairResult[];
+  organisations: OrganisationGroup[];
 }
 
-export function FairPrintSheet({ mode, language, results }: FairPrintSheetProps) {
+export function FairPrintSheet({ mode, language, results, organisations }: FairPrintSheetProps) {
   const date = new Date().toLocaleDateString(language === 'de' ? 'de-DE' : 'it-IT', {
     day: '2-digit',
     month: '2-digit',
@@ -113,7 +114,7 @@ export function FairPrintSheet({ mode, language, results }: FairPrintSheetProps)
     </table>
   );
 
-  const organisationRows = ORGANISATIONS.flatMap((group) => {
+  const organisationRows = organisations.flatMap((group) => {
     const area = results.find((row) => row.name === group.reg);
     return group.list.map((org) => {
       const variableFee = (area?.varFee ?? 0) * org[1];
