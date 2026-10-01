@@ -2,16 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Language, Region, SaveMode } from './types/fair';
 import { translations } from './i18n/translations';
 import { calculateFairDistribution } from './features/fair/calculations';
-import { DEFAULT_REGIONS, FF, N, ORGANISATIONS, PREV, VF } from './features/fair/constants';
+import { DEFAULT_REGIONS, FF, ORGANISATIONS, PREV } from './features/fair/constants';
 import { fmt2, fmtE, fmtInputInt, parseFormattedInt } from './utils/formatting';
 import { connectPersistence, loadLocal, saveCloud, saveLocal } from './services/persistence';
 import { AccessibilityMount } from './components/AccessibilityMount';
 import { NavigationRuntimeMount } from './components/NavigationRuntimeMount';
 import { RegionLabel } from './components/RegionLogos';
+import { FairPrintSheet, type FairPrintMode } from './components/FairPrintSheet';
 import {
   applyDNSFoundation,
   DNS_FAIR_FOUNDATION_VERSION,
   DNS_SHARED_WEB_LOGO_URL,
+  printDNSDocument,
 } from './services/foundation';
 import {
   DNS_DATA_CONTRACTS,
@@ -35,6 +37,7 @@ export default function App(){
   const [regions,setRegions]=useState<Region[]>(()=>loadLocal()?.regions ?? DEFAULT_REGIONS.map(r=>({...r})));
   const [saveMode,setSaveMode]=useState<SaveMode>('waiting');
   const [saveAt,setSaveAt]=useState<number|null>(null);
+  const [printMode,setPrintMode]=useState<FairPrintMode>('overview');
   const persistence=useRef<any>(null);
   const hydrated=useRef(false);
   const t=translations[language];
@@ -72,27 +75,11 @@ export default function App(){
   const totalAll=results.reduce((s,r)=>s+r.varFee+FF,0), totalPrev=PREV.reduce((s,v)=>s+v,0);
   const orgTotals=ORGANISATIONS.reduce((acc,g)=>{const area=results.find(r=>r.name===g.reg);g.list.forEach(o=>{const vf=(area?.varFee||0)*o[1];acc.vf+=vf;acc.ff+=o[2];acc.total+=vf+o[2];});return acc;},{vf:0,ff:0,total:0});
 
-  function printSimple(kind:'final'|'org'){
-    const date=new Date().toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
-    let title='',head='',body='',foot='';
-    if(kind==='final'){
-      title=language==='de'?'Jahresbeitrag 2027 — Partner':'Quota annuale 2027 — Partner';
-      head='<tr><th>'+t.partner+'</th><th>Score %</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th><th>Quote 2026</th><th>+/-</th></tr>';
-      body=results.map((r,i)=>{const tot=r.varFee+FF,diff=tot-PREV[i];return '<tr><td>'+r.name+'</td><td>'+fmt2(r.score)+' %</td><td>'+fmtE(r.varFee)+'</td><td>'+fmtE(FF)+'</td><td><strong>'+fmtE(tot)+'</strong></td><td>'+fmtE(PREV[i])+'</td><td>'+(diff>0?'+':'')+fmtE(diff)+'</td></tr>';}).join('');
-      foot='<tr><td>'+t.total+'</td><td>100,00 %</td><td>'+fmtE(totalVF)+'</td><td>'+fmtE(FF*N)+'</td><td>'+fmtE(totalAll)+'</td><td>'+fmtE(totalPrev)+'</td><td>'+((totalAll-totalPrev)>0?'+':'')+fmtE(totalAll-totalPrev)+'</td></tr>';
-    }else{
-      title=language==='de'?'Jahresbeitrag 2027 — Organisationen':'Quota annuale 2027 — Organizzazioni';
-      head='<tr><th>'+t.organisation+'</th><th>'+t.region+'</th><th>'+t.key+'</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th></tr>';
-      let sv=0,sf=0,st=0; body=ORGANISATIONS.flatMap(g=>{const area=results.find(r=>r.name===g.reg);return g.list.map((o,i)=>{const vf=(area?.varFee||0)*o[1],ff=o[2],tot=vf+ff;sv+=vf;sf+=ff;st+=tot;return '<tr><td>'+o[0]+'</td><td>'+(i===0?g.reg:'')+'</td><td>'+fmt2(o[1]*100)+' %</td><td>'+fmtE(vf)+'</td><td>'+fmtE(ff)+'</td><td><strong>'+fmtE(tot)+'</strong></td></tr>';});}).join('');
-      foot='<tr><td>'+t.total+'</td><td></td><td>100,00 %</td><td>'+fmtE(sv)+'</td><td>'+fmtE(sf)+'</td><td>'+fmtE(st)+'</td></tr>';
-    }
-    const w=window.open('','_blank'); if(!w)return;
-    w.document.write("<!doctype html><html><head><meta charset='utf-8'><title>"+title+"</title><style>body{font-family:Segoe UI,Arial,sans-serif;margin:32px;color:#1a2e33}h2{color:#0D4D5E;font-size:18px;margin-bottom:4px}.sub{font-size:11px;color:#5a7a82;margin-bottom:20px}table{width:100%;border-collapse:collapse}thead{background:#0D4D5E;color:white}th,td{padding:9px 10px;border-bottom:1px solid #d0e4e5;font-size:11px;text-align:right}th:first-child,td:first-child{text-align:left}tbody tr:nth-child(even){background:#e8f4f4}tfoot{background:#E0F0F0;font-weight:700;color:#0D4D5E}@page{size:landscape;margin:14mm}</style></head><body><img src='"+location.origin+import.meta.env.BASE_URL+"logo.png' style='height:34px;margin-bottom:12px'><h2>"+title+"</h2><div class='sub'>Dolomiti NordicSki · WS 2026/27 · "+date+"</div><table><thead>"+head+"</thead><tbody>"+body+"</tbody><tfoot>"+foot+"</tfoot></table></body></html>");
-    w.document.close();
-    const printNow=()=>window.setTimeout(()=>w.print(),100);
-    const img=w.document.querySelector('img');
-    if(img && !img.complete){img.addEventListener('load',printNow,{once:true});img.addEventListener('error',printNow,{once:true});}
-    else printNow();
+  function requestPrint(mode: FairPrintMode) {
+    setPrintMode(mode);
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => printDNSDocument());
+    });
   }
 
   return <div className="min-h-screen flex flex-col">
@@ -129,9 +116,9 @@ export default function App(){
     <NavigationRuntimeMount />
     <main className="print-main flex-1 p-3 md:px-6 md:py-4 max-w-[1100px] w-full mx-auto">
       <div className="print-hide flex flex-wrap gap-2 items-center mb-4">
-        <button className="dns-btn-primary" onClick={()=>window.print()}>⬇ {t.print}</button>
-        <button className="dns-btn-primary bg-dns-mid" onClick={()=>printSimple('final')}>⬇ {t.printFinal}</button>
-        <button className="dns-btn-primary bg-dns-mid" onClick={()=>printSimple('org')}>⬇ {t.printOrg}</button>
+        <button className="dns-btn-primary" onClick={()=>requestPrint('overview')}>⬇ {t.print}</button>
+        <button className="dns-btn-primary bg-dns-mid" onClick={()=>requestPrint('final')}>⬇ {t.printFinal}</button>
+        <button className="dns-btn-primary bg-dns-mid" onClick={()=>requestPrint('organisations')}>⬇ {t.printOrg}</button>
         <button className="dns-btn-secondary" onClick={reset}>↺ {t.reset}</button>
         <div className="md:ml-auto flex items-center gap-1.5 text-[10px] text-dns-muted px-2 py-1 border border-dns-border rounded bg-white"><span className={'w-[7px] h-[7px] rounded-full '+statusDot}/>{statusText}</div>
       </div>
@@ -173,5 +160,6 @@ export default function App(){
       </section>
     </main>
     <footer className="bg-dns-deep px-4 md:px-[1.8rem] py-3 font-alt"><div className="max-w-[1100px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] md:text-[11px] uppercase tracking-[.04em] text-white/65"><span>Dolomiti NordicSki</span><span>DNS FAIR · Foundation v{DNS_FAIR_FOUNDATION_VERSION} · Data Contracts v{DNS_DATA_CONTRACTS_VERSION} · {fairContract?.status ?? 'fair'} · © {new Date().getFullYear()}</span></div></footer>
+    <FairPrintSheet mode={printMode} language={language} results={results} />
   </div>;
 }
