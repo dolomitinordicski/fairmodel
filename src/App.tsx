@@ -79,7 +79,7 @@ export default function App(){
     setSaveMode(state.mode==='firebase'?'cloud':'local');
   }catch(e){console.warn(e);setSaveMode('error');}finally{hydrated.current=true;}})();},[]);
 
-  useEffect(()=>{if(!hydrated.current)return; const id=window.setTimeout(async()=>{const now=Date.now();try{
+  useEffect(()=>{if(!hydrated.current || organisationGroups.length===0)return; const id=window.setTimeout(async()=>{const now=Date.now();try{
     saveLocal(regions,now);
     if(persistence.current?.mode==='firebase'){setSaveMode('waiting');await saveCloud(persistence.current.db,persistence.current.ref,regions,organisationGroups,now);setSaveMode('cloud');}
     else setSaveMode('local');
