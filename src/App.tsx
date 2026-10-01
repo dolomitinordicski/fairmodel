@@ -15,6 +15,7 @@ import {
   printDNSDocument,
 } from './services/foundation';
 import { probeDNSCoreHeader, type DNSCoreHeaderStatus } from './services/dnsCore';
+import { formatDNSCoreHeaderStatus } from '@dolomitinordicski/dns-shared-data/ui/header-status';
 import {
   DNS_DATA_CONTRACTS,
   DNS_DATA_CONTRACTS_VERSION,
@@ -42,6 +43,7 @@ export default function App(){
   const persistence=useRef<any>(null);
   const hydrated=useRef(false);
   const t=translations[language];
+  const coreHeader=formatDNSCoreHeaderStatus(coreStatus,language);
   const results=useMemo(()=>calculateFairDistribution(regions),[regions]);
   const fairContract=DNS_DATA_CONTRACTS.find(contract=>contract.id==='fair');
 
@@ -85,36 +87,24 @@ export default function App(){
 
   return <div className="min-h-screen flex flex-col">
     <header data-dns-tool-header id="dns-fair-header" className="bg-dns-deep text-white shadow-[0_1px_0_rgba(255,255,255,.08)]">
-      <div className="mx-auto flex w-full max-w-[1440px] items-center justify-between gap-6 px-5 py-3.5 md:px-8">
-        <div className="flex min-w-0 items-center gap-4">
-          <img src={DNS_SHARED_WEB_LOGO_URL} alt="Dolomiti NordicSki" className="h-10 w-auto shrink-0 object-contain"/>
-          <div className="min-w-0">
-            <div className="text-[22px] uppercase tracking-[.035em] leading-none text-white whitespace-nowrap"><strong>DNS</strong> <span className="font-normal">FAIR</span></div>
-            <div className="mt-1.5 truncate font-alt text-[11px] font-normal uppercase leading-tight tracking-[.06em] text-dns-light">{t.subtitle}</div>
+      <div className="dns-tool-header-shell">
+        <div className="dns-tool-header-brand">
+          <img src={DNS_SHARED_WEB_LOGO_URL} alt="Dolomiti NordicSki" className="dns-tool-header-logo"/>
+          <div className="dns-tool-header-identity">
+            <div className="dns-tool-header-title"><strong>DNS</strong> <span>FAIR</span></div>
+            <div className="dns-tool-header-subtitle">{t.subtitle}</div>
           </div>
         </div>
-        <div className="flex items-center gap-4 whitespace-nowrap">
-          <div className="flex items-center gap-3">
+        <div className="dns-tool-header-actions">
+          <div className="dns-tool-header-controls">
             <AccessibilityMount language={language}/>
-            <div className="flex gap-3 text-[10px] font-bold uppercase tracking-[.06em]">
+            <div className="dns-tool-header-language">
               {(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} data-dns-press aria-pressed={language===l} className={'border-0 border-b-2 bg-transparent px-1 py-1 text-white '+(language===l?'border-white':'border-transparent opacity-60')}>{l.toUpperCase()}</button>)}
             </div>
           </div>
-          <div className={[
-            'hidden items-center gap-2 text-[10px] font-semibold uppercase tracking-[.05em] xl:flex',
-            coreStatus.state === 'ready' ? 'text-[#d8f0e7]' : '',
-            coreStatus.state === 'error' ? 'text-[#ffd7d0]' : 'text-white/65',
-          ].join(' ')} aria-live="polite">
-            <span className={[
-              'h-2 w-2 rounded-full',
-              coreStatus.state === 'ready' ? 'bg-emerald-400' : '',
-              coreStatus.state === 'error' ? 'bg-orange-400' : 'bg-dns-light',
-            ].join(' ')}/>
-            {coreStatus.state === 'ready'
-              ? `${language==='de'?'DNS_Core verbunden':'DNS_Core connesso'} · ${coreStatus.reportingAreas}/${coreStatus.organizations}`
-              : coreStatus.state === 'error'
-                ? (language==='de'?'DNS_Core nicht erreichbar':'DNS_Core non raggiungibile')
-                : (language==='de'?'DNS_Core verbindet…':'Connessione a DNS_Core…')}
+          <div className="dns-tool-header-status" data-state={coreHeader.state} aria-live="polite">
+            <span className="dns-tool-header-status-dot"/>
+            {coreHeader.text}
           </div>
         </div>
       </div>
