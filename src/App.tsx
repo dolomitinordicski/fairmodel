@@ -97,7 +97,7 @@ export default function App(){
       </div>
     </header>
 
-    <nav id="dns-fair-nav" className="dns-tab-nav print-hide" aria-label="FAIR">
+    <nav id="dns-fair-nav" className="dns-tab-nav" aria-label="FAIR">
       <div id="dns-scroll-progress" className="dns-scroll-progress-track" role="progressbar" aria-label="Page scroll progress" aria-valuemin={0} aria-valuemax={100} aria-valuenow={0}>
         <span id="dns-scroll-progress-bar" className="dns-scroll-progress-bar"/>
       </div>
