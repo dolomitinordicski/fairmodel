@@ -25,6 +25,7 @@ import {
   resolveReportingAreaId,
 } from '@dolomitinordicski/dns-shared-data';
 import { formatDNSCoreHeaderStatus } from '@dolomitinordicski/dns-shared-data/ui/header-status';
+import { openDNSOverlay } from '@dolomitinordicski/dns-shared-data/ui/overlay';
 
 const SectionTitle=({children}:{children:React.ReactNode})=><h2 className="dns-section-title mt-4 md:mt-5 mb-2">{children}</h2>;
 const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="dns-card border-t-[3px] border-t-dns-light p-3 md:px-4 md:py-3"><div className="font-display text-[10px] font-bold uppercase tracking-[.07em] text-dns-mid mb-1">{label}</div><div className="font-display text-[20px] md:text-[21px] leading-none font-bold text-dns-deep">{value}</div>{sub&&<div className="font-alt text-[10px] text-dns-muted mt-1">{sub}</div>}</div>;
@@ -44,6 +45,8 @@ export default function App(){
   const [saveMode,setSaveMode]=useState<SaveMode>('waiting');
   const [saveAt,setSaveAt]=useState<number|null>(null);
   const [printMode,setPrintMode]=useState<FairPrintMode>('overview');
+  const [resetOpen,setResetOpen]=useState(false);
+  const resetDialogRef=useRef<HTMLDivElement>(null);
   const [coreStatus,setCoreStatus]=useState<DNSCoreHeaderStatus>({state:'loading'});
   const [organisationGroups,setOrganisationGroups]=useState<import('./types/fair').OrganisationGroup[]>([]);
   const persistence=useRef<any>(null);
@@ -54,6 +57,16 @@ export default function App(){
   const fairContract=DNS_DATA_CONTRACTS.find(contract=>contract.id==='fair');
 
   useEffect(()=>subscribeDNSFairLanguage(setLanguage),[]);
+  useEffect(()=>{
+    if(!resetOpen || !resetDialogRef.current)return;
+    const overlay=openDNSOverlay({
+      type:'confirm',
+      element:resetDialogRef.current,
+      closeOnBackdrop:true,
+      onClose:()=>setResetOpen(false),
+    });
+    return()=>overlay.disconnect();
+  },[resetOpen]);
   useEffect(()=>{ void probeDNSCoreHeader().then(setCoreStatus); },[]);
   useEffect(()=>{ void loadDNSAreaAllocationKeys('2026-27').then((keys)=>{
     const canonicalKeys=[...keys.filter((key)=>key.active)]
@@ -105,7 +118,10 @@ export default function App(){
   const statusDot=saveMode==='cloud'?'bg-dns-positive':saveMode==='waiting'?'bg-dns-mid':saveMode==='error'?'bg-dns-negative':'bg-dns-light';
 
   function updateRegion(index:number,key:keyof Pick<Region,'PN'|'SW'|'KP'|'SA'>,value:number){setRegions(prev=>prev.map((r,i)=>i===index?{...r,[key]:value}:r));}
-  function reset(){setRegions(DEFAULT_REGIONS.map(r=>({...r})));}
+  function reset(){
+    setRegions(DEFAULT_REGIONS.map(r=>({...r})));
+    setResetOpen(false);
+  }
 
   const totalPN=regions.reduce((s,r)=>s+r.PN,0), totalSW=regions.reduce((s,r)=>s+r.SW,0), totalSA=regions.reduce((s,r)=>s+r.SA,0);
   const totalScore=results.reduce((s,r)=>s+r.score,0), totalVF=results.reduce((s,r)=>s+r.varFee,0);
@@ -163,7 +179,7 @@ export default function App(){
         <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('overview')}>⬇ {t.print}</button>
         <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('final')}>⬇ {t.printFinal}</button>
         <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('organisations')}>⬇ {t.printOrg}</button>
-        <button className="dns-button" data-variant="secondary" onClick={reset}>↺ {t.reset}</button>
+        <button className="dns-button" data-variant="secondary" onClick={()=>setResetOpen(true)}>↺ {t.reset}</button>
         <div className="md:ml-auto flex items-center gap-1.5 text-[10px] text-dns-muted px-2 py-1 border border-dns-border rounded bg-white"><span className={'w-[7px] h-[7px] rounded-full '+statusDot}/>{statusText}</div>
       </div>
 
@@ -203,6 +219,16 @@ export default function App(){
       <div className="dns-table-wrap dns-fair-table-wrap"><table className="dns-table dns-fair-table"><thead><tr><th>{t.organisation}</th><th>{t.region}</th><th>{t.key}</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th></tr></thead><tbody>{organisationGroups.flatMap(g=>{const area=results.find(r=>r.name===g.reg);return g.list.map((o,i)=>{const vf=(area?.varFee||0)*o[1],tot=vf+o[2];return <tr key={g.reg+o[0]}><td><OrganizationLabel organizationName={o[0]}/></td>{i===0?<td rowSpan={g.list.length} className="dns-region-group-cell"><RegionLabel fairName={g.reg}/></td>:null}<td className="text-right">{fmt2(o[1]*100)} %</td><td className="text-right font-bold text-dns-positive">{fmtE(vf)}</td><td className="text-right">{fmtE(o[2])}</td><td className="text-right font-bold text-dns-deep">{fmtE(tot)}</td></tr>;});})}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td></td><td className="text-right">100,00 %</td><td className="text-right">{fmtE(orgTotals.vf)}</td><td className="text-right">{fmtE(orgTotals.ff)}</td><td className="text-right">{fmtE(orgTotals.total)}</td></tr></tfoot></table></div>
       </section>
     </main>
+    {resetOpen&&<div ref={resetDialogRef} className="dns-blocking-overlay">
+      <section className="dns-card w-full max-w-[460px] p-5 md:p-6">
+        <h2 className="dns-section-title">{t.reset}</h2>
+        <p className="mt-3 font-alt text-[12px] leading-relaxed text-dns-muted">{t.resetConfirm}</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button className="dns-button" data-variant="secondary" onClick={()=>setResetOpen(false)}>{t.cancel}</button>
+          <button className="dns-button" data-variant="danger" onClick={reset}>{t.reset}</button>
+        </div>
+      </section>
+    </div>}
     <footer data-dns-tool-footer><div className="dns-tool-footer-shell"><span className="dns-tool-footer-primary">Dolomiti NordicSki</span><span className="dns-tool-footer-meta">DNS FAIR · Foundation v{DNS_FAIR_FOUNDATION_VERSION} · Data Contracts v{DNS_DATA_CONTRACTS_VERSION} · {fairContract?.status ?? 'fair'} · © {new Date().getFullYear()}</span></div></footer>
     <FairPrintSheet mode={printMode} language={language} results={results} organisations={organisationGroups} />
   </div>;
