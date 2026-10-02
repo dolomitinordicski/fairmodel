@@ -1,21 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Roboto:wght@300;400;500;700&display=swap');
 @import "tailwindcss";
 
-/* Compile-time fallbacks mirror DNS_DESIGN_SYSTEM.
-   Runtime values are applied by src/services/foundation.ts. */
-@theme {
-  --color-dns-deep: #0D4D5E;
-  --color-dns-mid: #417483;
-  --color-dns-light: #AAD0D1;
-  --color-dns-bg: #F4F8F9;
-  --color-dns-surface: #FFFFFF;
-  --color-dns-muted: #5A7F8A;
-  --color-dns-border: rgba(65,116,131,.20);
-  --color-dns-positive: #0F6E56;
-  --color-dns-negative: #993C1D;
-  --font-display: "Be Vietnam Pro", sans-serif;
-  --font-alt: "Roboto", sans-serif;
-}
+@config "../../tailwind.config.js";
 
 @layer base {
   * { box-sizing: border-box; }
@@ -31,7 +17,7 @@
 
 @layer components {
   .dns-fair-section {
-    scroll-margin-top: calc(var(--dns-sticky-stack-height, 120px) + 16px);
+    scroll-margin-top: calc(var(--dns-sticky-stack-height) + 16px);
   }
 
   .dns-tab-season-wrap {
@@ -44,7 +30,7 @@
     align-items: center;
     padding: .25rem .6rem;
     border: 1px solid var(--color-dns-light);
-    border-radius: var(--dns-control-radius, 6px);
+    border-radius: var(--dns-control-radius);
     background: var(--color-dns-light);
     color: var(--color-dns-deep);
     font-size: 9px;
@@ -87,10 +73,12 @@
     height: 22px;
   }
 
-  /* Foundation v1.18 owns dns-note, dns-table, dns-input and dns-button.
+  /* Foundation owns shared note, table, input and button primitives.
      FAIR only keeps domain-specific sizing/alignment. */
   .dns-fair-table-wrap {
-    @apply mb-4 rounded-[10px] shadow-[0_1px_4px_rgba(13,77,94,.07)];
+    @apply mb-4;
+    border-radius: var(--dns-card-radius);
+    box-shadow: var(--dns-card-shadow);
   }
 
   .dns-fair-table {

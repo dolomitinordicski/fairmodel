@@ -5,14 +5,15 @@ import { calculateFairDistribution } from './features/fair/calculations';
 import { DEFAULT_REGIONS, FF, N, PREV } from './features/fair/constants';
 import { fmt2, fmtE, fmtInputInt, parseFormattedInt } from './utils/formatting';
 import { connectPersistence, loadLocal, saveCloud, saveLocal } from './services/persistence';
-import { AccessibilityMount } from './components/AccessibilityMount';
 import { OrganizationLabel, RegionLabel } from './components/RegionLogos';
 import { FairPrintSheet, type FairPrintMode } from './components/FairPrintSheet';
 import {
-  applyDNSFoundation,
   DNS_FAIR_FOUNDATION_VERSION,
   DNS_SHARED_WEB_LOGO_URL,
-  printDNSDocument,
+  dnsFairCapabilities,
+  getDNSFairLanguage,
+  setDNSFairLanguage,
+  subscribeDNSFairLanguage,
 } from './services/foundation';
 import { loadDNSAreaAllocationKeys, probeDNSCoreHeader, type DNSCoreHeaderStatus } from './services/dnsCore';
 import {
@@ -24,10 +25,10 @@ import {
   resolveReportingAreaId,
 } from '@dolomitinordicski/dns-shared-data';
 import { formatDNSCoreHeaderStatus } from '@dolomitinordicski/dns-shared-data/ui/header-status';
-import { initDNSFooterRuntime } from '@dolomitinordicski/dns-shared-data/ui/footer';
+import { openDNSOverlay } from '@dolomitinordicski/dns-shared-data/ui/overlay';
 
-const SectionTitle=({children}:{children:React.ReactNode})=><h2 className="font-display text-[11px] font-bold text-dns-deep uppercase tracking-[.07em] mt-4 md:mt-5 mb-2">{children}</h2>;
-const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="bg-white rounded-[10px] border-t-[3px] border-t-dns-light p-3 md:px-4 md:py-3 shadow-[0_1px_4px_rgba(13,77,94,.07)]"><div className="font-display text-[10px] font-bold uppercase tracking-[.07em] text-dns-mid mb-1">{label}</div><div className="font-display text-[20px] md:text-[21px] leading-none font-bold text-dns-deep">{value}</div>{sub&&<div className="font-alt text-[10px] text-dns-muted mt-1">{sub}</div>}</div>;
+const SectionTitle=({children}:{children:React.ReactNode})=><h2 className="dns-section-title mt-4 md:mt-5 mb-2">{children}</h2>;
+const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="dns-card border-t-[3px] border-t-dns-light p-3 md:px-4 md:py-3"><div className="font-display text-[10px] font-bold uppercase tracking-[.07em] text-dns-mid mb-1">{label}</div><div className="font-display text-[20px] md:text-[21px] leading-none font-bold text-dns-deep">{value}</div>{sub&&<div className="font-alt text-[10px] text-dns-muted mt-1">{sub}</div>}</div>;
 
 function FormattedIntInput({value,onCommit}:{value:number;onCommit:(value:number)=>void}){
   const [text,setText]=useState(()=>fmtInputInt(value));
@@ -39,11 +40,13 @@ function FormattedIntInput({value,onCommit}:{value:number;onCommit:(value:number
 }
 
 export default function App(){
-  const [language,setLanguage]=useState<Language>('de');
+  const [language,setLanguage]=useState<Language>(()=>getDNSFairLanguage());
   const [regions,setRegions]=useState<Region[]>(()=>loadLocal()?.regions ?? DEFAULT_REGIONS.map(r=>({...r})));
   const [saveMode,setSaveMode]=useState<SaveMode>('waiting');
   const [saveAt,setSaveAt]=useState<number|null>(null);
   const [printMode,setPrintMode]=useState<FairPrintMode>('overview');
+  const [resetOpen,setResetOpen]=useState(false);
+  const resetDialogRef=useRef<HTMLDivElement>(null);
   const [coreStatus,setCoreStatus]=useState<DNSCoreHeaderStatus>({state:'loading'});
   const [organisationGroups,setOrganisationGroups]=useState<import('./types/fair').OrganisationGroup[]>([]);
   const persistence=useRef<any>(null);
@@ -53,7 +56,17 @@ export default function App(){
   const results=useMemo(()=>calculateFairDistribution(regions),[regions]);
   const fairContract=DNS_DATA_CONTRACTS.find(contract=>contract.id==='fair');
 
-  useEffect(()=>applyDNSFoundation(),[]);
+  useEffect(()=>subscribeDNSFairLanguage(setLanguage),[]);
+  useEffect(()=>{
+    if(!resetOpen || !resetDialogRef.current)return;
+    const overlay=openDNSOverlay({
+      type:'confirm',
+      element:resetDialogRef.current,
+      closeOnBackdrop:true,
+      onClose:()=>setResetOpen(false),
+    });
+    return()=>overlay.disconnect();
+  },[resetOpen]);
   useEffect(()=>{ void probeDNSCoreHeader().then(setCoreStatus); },[]);
   useEffect(()=>{ void loadDNSAreaAllocationKeys('2026-27').then((keys)=>{
     const canonicalKeys=[...keys.filter((key)=>key.active)]
@@ -105,7 +118,10 @@ export default function App(){
   const statusDot=saveMode==='cloud'?'bg-dns-positive':saveMode==='waiting'?'bg-dns-mid':saveMode==='error'?'bg-dns-negative':'bg-dns-light';
 
   function updateRegion(index:number,key:keyof Pick<Region,'PN'|'SW'|'KP'|'SA'>,value:number){setRegions(prev=>prev.map((r,i)=>i===index?{...r,[key]:value}:r));}
-  function reset(){setRegions(DEFAULT_REGIONS.map(r=>({...r})));}
+  function reset(){
+    setRegions(DEFAULT_REGIONS.map(r=>({...r})));
+    setResetOpen(false);
+  }
 
   const totalPN=regions.reduce((s,r)=>s+r.PN,0), totalSW=regions.reduce((s,r)=>s+r.SW,0), totalSA=regions.reduce((s,r)=>s+r.SA,0);
   const totalScore=results.reduce((s,r)=>s+r.score,0), totalVF=results.reduce((s,r)=>s+r.varFee,0);
@@ -116,12 +132,12 @@ export default function App(){
   function requestPrint(mode: FairPrintMode) {
     setPrintMode(mode);
     window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => printDNSDocument());
+      window.requestAnimationFrame(() => void dnsFairCapabilities.run('print'));
     });
   }
 
   return <div className="min-h-screen flex flex-col">
-    <header data-dns-tool-header id="dns-fair-header" className="bg-dns-deep text-white shadow-[0_1px_0_rgba(255,255,255,.08)]">
+    <header data-dns-tool-header id="dns-fair-header" className="bg-[var(--dns-header-bg)] text-white shadow-[var(--dns-header-shadow)]">
       <div className="dns-tool-header-shell">
         <div className="dns-tool-header-brand">
           <img src={DNS_SHARED_WEB_LOGO_URL} alt="Dolomiti NordicSki" className="dns-tool-header-logo"/>
@@ -132,9 +148,9 @@ export default function App(){
         </div>
         <div className="dns-tool-header-actions">
           <div className="dns-tool-header-controls">
-            <AccessibilityMount language={language}/>
+            <div data-dns-accessibility-mount className="flex items-center"/>
             <div className="dns-tool-header-language">
-              {(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} data-dns-press aria-pressed={language===l} className={'border-0 border-b-2 bg-transparent px-1 py-1 text-white '+(language===l?'border-white':'border-transparent opacity-60')}>{l.toUpperCase()}</button>)}
+              {(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setDNSFairLanguage(l)} data-dns-press aria-pressed={language===l} className={'border-0 border-b-2 bg-transparent px-1 py-1 text-white '+(language===l?'border-white':'border-transparent opacity-60')}>{l.toUpperCase()}</button>)}
             </div>
           </div>
           <div className="dns-tool-header-status" data-state={coreHeader.state} aria-live="polite">
@@ -163,14 +179,14 @@ export default function App(){
         <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('overview')}>⬇ {t.print}</button>
         <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('final')}>⬇ {t.printFinal}</button>
         <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('organisations')}>⬇ {t.printOrg}</button>
-        <button className="dns-button" data-variant="secondary" onClick={reset}>↺ {t.reset}</button>
+        <button className="dns-button" data-variant="secondary" onClick={()=>setResetOpen(true)}>↺ {t.reset}</button>
         <div className="md:ml-auto flex items-center gap-1.5 text-[10px] text-dns-muted px-2 py-1 border border-dns-border rounded bg-white"><span className={'w-[7px] h-[7px] rounded-full '+statusDot}/>{statusText}</div>
       </div>
 
       <section id="fair-parameters" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.parameters}</SectionTitle>
       <div className="grid grid-cols-1 min-[421px]:grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
-        {[[ 'PN',t.pn,'15%',t.direct],['SWDNS',t.sw,'55%',t.direct],['KP',t.kp,'20%',t.premium],['SA',t.sa,'10%',t.premium]].map((x,i)=><div key={x[0]} className="bg-white rounded-[10px] border-t-[3px] border-t-dns-light p-3 text-center shadow-[0_1px_4px_rgba(13,77,94,.07)]"><div className="font-display text-[15px] md:text-[17px] font-bold text-dns-deep">{x[0]}</div><div className="font-alt text-[9px] md:text-[10px] text-dns-muted my-1 min-h-[22px]">{x[1]}</div><div className="font-display text-lg md:text-[22px] font-bold text-dns-deep">{x[2]}</div><span className={'inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full '+(i<2?'bg-dns-light/20 text-dns-mid':'bg-dns-bg text-dns-mid')}>{x[3]}</span><div className="font-alt text-[9px] text-dns-muted/70 mt-1">{t.locked}</div></div>)}
+        {[[ 'PN',t.pn,'15%',t.direct],['SWDNS',t.sw,'55%',t.direct],['KP',t.kp,'20%',t.premium],['SA',t.sa,'10%',t.premium]].map((x,i)=><div key={x[0]} className="dns-card border-t-[3px] border-t-dns-light p-3 text-center"><div className="font-display text-[15px] md:text-[17px] font-bold text-dns-deep">{x[0]}</div><div className="font-alt text-[9px] md:text-[10px] text-dns-muted my-1 min-h-[22px]">{x[1]}</div><div className="font-display text-lg md:text-[22px] font-bold text-dns-deep">{x[2]}</div><span className={'inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full '+(i<2?'bg-dns-light/20 text-dns-mid':'bg-dns-bg text-dns-mid')}>{x[3]}</span><div className="font-alt text-[9px] text-dns-muted/70 mt-1">{t.locked}</div></div>)}
       </div>
       <div className="dns-note dns-readable-copy">{t.note}</div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 mb-4"><Kpi label={t.variableFee} value="€ 45.000" sub={t.fullDistribution}/><Kpi label={t.activePartners} value={String(results.filter(r=>r.score>0).length)} sub={t.scorePositive}/><Kpi label={t.highestShare} value={fmtE(maxR.varFee)} sub={maxR.name}/></div>
@@ -189,7 +205,7 @@ export default function App(){
 
       <section id="fair-distribution" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.distribution}</SectionTitle>
-      <div className="bg-white border border-dns-border p-3 mb-4">{results.map(r=><div key={r.name} className="grid grid-cols-[115px_1fr_68px] md:grid-cols-[190px_1fr_75px] gap-2 items-center mb-1.5"><div className="text-[10px] md:text-[11px] md:text-right leading-tight"><RegionLabel fairName={r.name} compact/></div><div className="bg-dns-bg rounded h-[13px] md:h-[15px] overflow-hidden"><div className="h-full bg-gradient-to-r from-dns-mid to-dns-light rounded" style={{width:((r.varFee/maxR.varFee)*100).toFixed(1)+'%'}}/></div><div className="text-right text-[10px] md:text-[11px] font-semibold text-dns-deep">{fmtE(r.varFee)}</div></div>)}</div>
+      <div className="dns-card p-3 mb-4">{results.map(r=><div key={r.name} className="grid grid-cols-[115px_1fr_68px] md:grid-cols-[190px_1fr_75px] gap-2 items-center mb-1.5"><div className="text-[10px] md:text-[11px] md:text-right leading-tight"><RegionLabel fairName={r.name} compact/></div><div className="bg-dns-bg rounded h-[13px] md:h-[15px] overflow-hidden"><div className="h-full bg-gradient-to-r from-dns-mid to-dns-light rounded" style={{width:((r.varFee/maxR.varFee)*100).toFixed(1)+'%'}}/></div><div className="text-right text-[10px] md:text-[11px] font-semibold text-dns-deep">{fmtE(r.varFee)}</div></div>)}</div>
       </section>
 
       <section id="fair-annual" className="dns-fair-section" data-dns-reveal>
@@ -203,7 +219,17 @@ export default function App(){
       <div className="dns-table-wrap dns-fair-table-wrap"><table className="dns-table dns-fair-table"><thead><tr><th>{t.organisation}</th><th>{t.region}</th><th>{t.key}</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th></tr></thead><tbody>{organisationGroups.flatMap(g=>{const area=results.find(r=>r.name===g.reg);return g.list.map((o,i)=>{const vf=(area?.varFee||0)*o[1],tot=vf+o[2];return <tr key={g.reg+o[0]}><td><OrganizationLabel organizationName={o[0]}/></td>{i===0?<td rowSpan={g.list.length} className="dns-region-group-cell"><RegionLabel fairName={g.reg}/></td>:null}<td className="text-right">{fmt2(o[1]*100)} %</td><td className="text-right font-bold text-dns-positive">{fmtE(vf)}</td><td className="text-right">{fmtE(o[2])}</td><td className="text-right font-bold text-dns-deep">{fmtE(tot)}</td></tr>;});})}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td></td><td className="text-right">100,00 %</td><td className="text-right">{fmtE(orgTotals.vf)}</td><td className="text-right">{fmtE(orgTotals.ff)}</td><td className="text-right">{fmtE(orgTotals.total)}</td></tr></tfoot></table></div>
       </section>
     </main>
-    <footer data-dns-tool-footer className="bg-dns-deep px-4 md:px-[1.8rem] py-3 font-alt"><div className="max-w-[1100px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] md:text-[11px] uppercase tracking-[.04em] text-white/65"><span>Dolomiti NordicSki</span><span>DNS FAIR · Foundation v{DNS_FAIR_FOUNDATION_VERSION} · Data Contracts v{DNS_DATA_CONTRACTS_VERSION} · {fairContract?.status ?? 'fair'} · © {new Date().getFullYear()}</span></div></footer>
+    {resetOpen&&<div ref={resetDialogRef} className="dns-blocking-overlay">
+      <section className="dns-card w-full max-w-[460px] p-5 md:p-6">
+        <h2 className="dns-section-title">{t.reset}</h2>
+        <p className="mt-3 font-alt text-[12px] leading-relaxed text-dns-muted">{t.resetConfirm}</p>
+        <div className="mt-5 flex justify-end gap-2">
+          <button className="dns-button" data-variant="secondary" onClick={()=>setResetOpen(false)}>{t.cancel}</button>
+          <button className="dns-button" data-variant="danger" onClick={reset}>{t.reset}</button>
+        </div>
+      </section>
+    </div>}
+    <footer data-dns-tool-footer><div className="dns-tool-footer-shell"><span className="dns-tool-footer-primary">Dolomiti NordicSki</span><span className="dns-tool-footer-meta">DNS FAIR · Foundation v{DNS_FAIR_FOUNDATION_VERSION} · Data Contracts v{DNS_DATA_CONTRACTS_VERSION} · {fairContract?.status ?? 'fair'} · © {new Date().getFullYear()}</span></div></footer>
     <FairPrintSheet mode={printMode} language={language} results={results} organisations={organisationGroups} />
   </div>;
 }
