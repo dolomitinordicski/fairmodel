@@ -27,7 +27,7 @@ import {
 import { formatDNSCoreHeaderStatus } from '@dolomitinordicski/dns-shared-data/ui/header-status';
 
 const SectionTitle=({children}:{children:React.ReactNode})=><h2 className="font-display text-[11px] font-bold text-dns-deep uppercase tracking-[.07em] mt-4 md:mt-5 mb-2">{children}</h2>;
-const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="bg-white rounded-[10px] border-t-[3px] border-t-dns-light p-3 md:px-4 md:py-3 shadow-[0_1px_4px_rgba(13,77,94,.07)]"><div className="font-display text-[10px] font-bold uppercase tracking-[.07em] text-dns-mid mb-1">{label}</div><div className="font-display text-[20px] md:text-[21px] leading-none font-bold text-dns-deep">{value}</div>{sub&&<div className="font-alt text-[10px] text-dns-muted mt-1">{sub}</div>}</div>;
+const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="dns-card border-t-[3px] border-t-dns-light p-3 md:px-4 md:py-3"><div className="font-display text-[10px] font-bold uppercase tracking-[.07em] text-dns-mid mb-1">{label}</div><div className="font-display text-[20px] md:text-[21px] leading-none font-bold text-dns-deep">{value}</div>{sub&&<div className="font-alt text-[10px] text-dns-muted mt-1">{sub}</div>}</div>;
 
 function FormattedIntInput({value,onCommit}:{value:number;onCommit:(value:number)=>void}){
   const [text,setText]=useState(()=>fmtInputInt(value));
@@ -170,7 +170,7 @@ export default function App(){
       <section id="fair-parameters" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.parameters}</SectionTitle>
       <div className="grid grid-cols-1 min-[421px]:grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
-        {[[ 'PN',t.pn,'15%',t.direct],['SWDNS',t.sw,'55%',t.direct],['KP',t.kp,'20%',t.premium],['SA',t.sa,'10%',t.premium]].map((x,i)=><div key={x[0]} className="bg-white rounded-[10px] border-t-[3px] border-t-dns-light p-3 text-center shadow-[0_1px_4px_rgba(13,77,94,.07)]"><div className="font-display text-[15px] md:text-[17px] font-bold text-dns-deep">{x[0]}</div><div className="font-alt text-[9px] md:text-[10px] text-dns-muted my-1 min-h-[22px]">{x[1]}</div><div className="font-display text-lg md:text-[22px] font-bold text-dns-deep">{x[2]}</div><span className={'inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full '+(i<2?'bg-dns-light/20 text-dns-mid':'bg-dns-bg text-dns-mid')}>{x[3]}</span><div className="font-alt text-[9px] text-dns-muted/70 mt-1">{t.locked}</div></div>)}
+        {[[ 'PN',t.pn,'15%',t.direct],['SWDNS',t.sw,'55%',t.direct],['KP',t.kp,'20%',t.premium],['SA',t.sa,'10%',t.premium]].map((x,i)=><div key={x[0]} className="dns-card border-t-[3px] border-t-dns-light p-3 text-center"><div className="font-display text-[15px] md:text-[17px] font-bold text-dns-deep">{x[0]}</div><div className="font-alt text-[9px] md:text-[10px] text-dns-muted my-1 min-h-[22px]">{x[1]}</div><div className="font-display text-lg md:text-[22px] font-bold text-dns-deep">{x[2]}</div><span className={'inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full '+(i<2?'bg-dns-light/20 text-dns-mid':'bg-dns-bg text-dns-mid')}>{x[3]}</span><div className="font-alt text-[9px] text-dns-muted/70 mt-1">{t.locked}</div></div>)}
       </div>
       <div className="dns-note dns-readable-copy">{t.note}</div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 mb-4"><Kpi label={t.variableFee} value="€ 45.000" sub={t.fullDistribution}/><Kpi label={t.activePartners} value={String(results.filter(r=>r.score>0).length)} sub={t.scorePositive}/><Kpi label={t.highestShare} value={fmtE(maxR.varFee)} sub={maxR.name}/></div>
@@ -189,7 +189,7 @@ export default function App(){
 
       <section id="fair-distribution" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.distribution}</SectionTitle>
-      <div className="bg-white border border-dns-border p-3 mb-4">{results.map(r=><div key={r.name} className="grid grid-cols-[115px_1fr_68px] md:grid-cols-[190px_1fr_75px] gap-2 items-center mb-1.5"><div className="text-[10px] md:text-[11px] md:text-right leading-tight"><RegionLabel fairName={r.name} compact/></div><div className="bg-dns-bg rounded h-[13px] md:h-[15px] overflow-hidden"><div className="h-full bg-gradient-to-r from-dns-mid to-dns-light rounded" style={{width:((r.varFee/maxR.varFee)*100).toFixed(1)+'%'}}/></div><div className="text-right text-[10px] md:text-[11px] font-semibold text-dns-deep">{fmtE(r.varFee)}</div></div>)}</div>
+      <div className="dns-card p-3 mb-4">{results.map(r=><div key={r.name} className="grid grid-cols-[115px_1fr_68px] md:grid-cols-[190px_1fr_75px] gap-2 items-center mb-1.5"><div className="text-[10px] md:text-[11px] md:text-right leading-tight"><RegionLabel fairName={r.name} compact/></div><div className="bg-dns-bg rounded h-[13px] md:h-[15px] overflow-hidden"><div className="h-full bg-gradient-to-r from-dns-mid to-dns-light rounded" style={{width:((r.varFee/maxR.varFee)*100).toFixed(1)+'%'}}/></div><div className="text-right text-[10px] md:text-[11px] font-semibold text-dns-deep">{fmtE(r.varFee)}</div></div>)}</div>
       </section>
 
       <section id="fair-annual" className="dns-fair-section" data-dns-reveal>
