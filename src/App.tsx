@@ -5,14 +5,15 @@ import { calculateFairDistribution } from './features/fair/calculations';
 import { DEFAULT_REGIONS, FF, N, PREV } from './features/fair/constants';
 import { fmt2, fmtE, fmtInputInt, parseFormattedInt } from './utils/formatting';
 import { connectPersistence, loadLocal, saveCloud, saveLocal } from './services/persistence';
-import { AccessibilityMount } from './components/AccessibilityMount';
 import { OrganizationLabel, RegionLabel } from './components/RegionLogos';
 import { FairPrintSheet, type FairPrintMode } from './components/FairPrintSheet';
 import {
-  applyDNSFoundation,
   DNS_FAIR_FOUNDATION_VERSION,
   DNS_SHARED_WEB_LOGO_URL,
-  printDNSDocument,
+  dnsFairCapabilities,
+  getDNSFairLanguage,
+  setDNSFairLanguage,
+  subscribeDNSFairLanguage,
 } from './services/foundation';
 import { loadDNSAreaAllocationKeys, probeDNSCoreHeader, type DNSCoreHeaderStatus } from './services/dnsCore';
 import {
@@ -24,7 +25,6 @@ import {
   resolveReportingAreaId,
 } from '@dolomitinordicski/dns-shared-data';
 import { formatDNSCoreHeaderStatus } from '@dolomitinordicski/dns-shared-data/ui/header-status';
-import { initDNSFooterRuntime } from '@dolomitinordicski/dns-shared-data/ui/footer';
 
 const SectionTitle=({children}:{children:React.ReactNode})=><h2 className="font-display text-[11px] font-bold text-dns-deep uppercase tracking-[.07em] mt-4 md:mt-5 mb-2">{children}</h2>;
 const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="bg-white rounded-[10px] border-t-[3px] border-t-dns-light p-3 md:px-4 md:py-3 shadow-[0_1px_4px_rgba(13,77,94,.07)]"><div className="font-display text-[10px] font-bold uppercase tracking-[.07em] text-dns-mid mb-1">{label}</div><div className="font-display text-[20px] md:text-[21px] leading-none font-bold text-dns-deep">{value}</div>{sub&&<div className="font-alt text-[10px] text-dns-muted mt-1">{sub}</div>}</div>;
@@ -39,7 +39,7 @@ function FormattedIntInput({value,onCommit}:{value:number;onCommit:(value:number
 }
 
 export default function App(){
-  const [language,setLanguage]=useState<Language>('de');
+  const [language,setLanguage]=useState<Language>(()=>getDNSFairLanguage());
   const [regions,setRegions]=useState<Region[]>(()=>loadLocal()?.regions ?? DEFAULT_REGIONS.map(r=>({...r})));
   const [saveMode,setSaveMode]=useState<SaveMode>('waiting');
   const [saveAt,setSaveAt]=useState<number|null>(null);
@@ -53,7 +53,7 @@ export default function App(){
   const results=useMemo(()=>calculateFairDistribution(regions),[regions]);
   const fairContract=DNS_DATA_CONTRACTS.find(contract=>contract.id==='fair');
 
-  useEffect(()=>applyDNSFoundation(),[]);
+  useEffect(()=>subscribeDNSFairLanguage(setLanguage),[]);
   useEffect(()=>{ void probeDNSCoreHeader().then(setCoreStatus); },[]);
   useEffect(()=>{ void loadDNSAreaAllocationKeys('2026-27').then((keys)=>{
     const canonicalKeys=[...keys.filter((key)=>key.active)]
@@ -116,7 +116,7 @@ export default function App(){
   function requestPrint(mode: FairPrintMode) {
     setPrintMode(mode);
     window.requestAnimationFrame(() => {
-      window.requestAnimationFrame(() => printDNSDocument());
+      window.requestAnimationFrame(() => void dnsFairCapabilities.run('print'));
     });
   }
 
@@ -132,9 +132,9 @@ export default function App(){
         </div>
         <div className="dns-tool-header-actions">
           <div className="dns-tool-header-controls">
-            <AccessibilityMount language={language}/>
+            <div data-dns-accessibility-mount className="flex items-center"/>
             <div className="dns-tool-header-language">
-              {(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setLanguage(l)} data-dns-press aria-pressed={language===l} className={'border-0 border-b-2 bg-transparent px-1 py-1 text-white '+(language===l?'border-white':'border-transparent opacity-60')}>{l.toUpperCase()}</button>)}
+              {(['de','it'] as Language[]).map(l=><button key={l} onClick={()=>setDNSFairLanguage(l)} data-dns-press aria-pressed={language===l} className={'border-0 border-b-2 bg-transparent px-1 py-1 text-white '+(language===l?'border-white':'border-transparent opacity-60')}>{l.toUpperCase()}</button>)}
             </div>
           </div>
           <div className="dns-tool-header-status" data-state={coreHeader.state} aria-live="polite">
