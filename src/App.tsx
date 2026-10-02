@@ -55,7 +55,18 @@ export default function App(){
   useEffect(()=>applyDNSFoundation(),[]);
   useEffect(()=>{ void probeDNSCoreHeader().then(setCoreStatus); },[]);
   useEffect(()=>{ void loadDNSAreaAllocationKeys('2026-27').then((keys)=>{
-    const groups = keys.filter((key)=>key.active).flatMap((key)=>{
+    const canonicalKeys=[...keys.filter((key)=>key.active)]
+      .sort((a,b)=>{
+        if(a.reportingAreaId!==b.reportingAreaId) return a.reportingAreaId.localeCompare(b.reportingAreaId);
+        if(a.revision!==b.revision) return b.revision-a.revision;
+        const aLegacy=a.id.includes('__');
+        const bLegacy=b.id.includes('__');
+        if(aLegacy!==bLegacy) return aLegacy?1:-1;
+        return a.id.localeCompare(b.id);
+      })
+      .filter((key,index,all)=>index===0 || all[index-1].reportingAreaId!==key.reportingAreaId);
+
+    const groups = canonicalKeys.flatMap((key)=>{
       const region = DEFAULT_REGIONS.find((candidate)=>resolveReportingAreaId(candidate.name)===key.reportingAreaId);
       if(!region) return [];
       return [{
