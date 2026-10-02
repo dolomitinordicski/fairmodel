@@ -31,7 +31,7 @@ const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div clas
 function FormattedIntInput({value,onCommit}:{value:number;onCommit:(value:number)=>void}){
   const [text,setText]=useState(()=>fmtInputInt(value));
   useEffect(()=>setText(fmtInputInt(value)),[value]);
-  return <input className="dns-input" inputMode="numeric" value={text}
+  return <input className="dns-input dns-num" inputMode="numeric" value={text}
     onFocus={e=>e.currentTarget.select()}
     onChange={e=>setText(e.target.value)}
     onBlur={()=>{const next=parseFormattedInt(text);setText(fmtInputInt(next));onCommit(next);}} />;
@@ -148,10 +148,10 @@ export default function App(){
     </nav>
     <main className="flex-1 p-3 md:px-6 md:py-4 max-w-[1100px] w-full mx-auto">
       <div className="flex flex-wrap gap-2 items-center mb-4">
-        <button className="dns-btn-primary" onClick={()=>requestPrint('overview')}>⬇ {t.print}</button>
-        <button className="dns-btn-primary bg-dns-mid" onClick={()=>requestPrint('final')}>⬇ {t.printFinal}</button>
-        <button className="dns-btn-primary bg-dns-mid" onClick={()=>requestPrint('organisations')}>⬇ {t.printOrg}</button>
-        <button className="dns-btn-secondary" onClick={reset}>↺ {t.reset}</button>
+        <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('overview')}>⬇ {t.print}</button>
+        <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('final')}>⬇ {t.printFinal}</button>
+        <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('organisations')}>⬇ {t.printOrg}</button>
+        <button className="dns-button" data-variant="secondary" onClick={reset}>↺ {t.reset}</button>
         <div className="md:ml-auto flex items-center gap-1.5 text-[10px] text-dns-muted px-2 py-1 border border-dns-border rounded bg-white"><span className={'w-[7px] h-[7px] rounded-full '+statusDot}/>{statusText}</div>
       </div>
 
@@ -160,14 +160,14 @@ export default function App(){
       <div className="grid grid-cols-1 min-[421px]:grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
         {[[ 'PN',t.pn,'15%',t.direct],['SWDNS',t.sw,'55%',t.direct],['KP',t.kp,'20%',t.premium],['SA',t.sa,'10%',t.premium]].map((x,i)=><div key={x[0]} className="bg-white rounded-[10px] border-t-[3px] border-t-dns-light p-3 text-center shadow-[0_1px_4px_rgba(13,77,94,.07)]"><div className="font-display text-[15px] md:text-[17px] font-bold text-dns-deep">{x[0]}</div><div className="font-alt text-[9px] md:text-[10px] text-dns-muted my-1 min-h-[22px]">{x[1]}</div><div className="font-display text-lg md:text-[22px] font-bold text-dns-deep">{x[2]}</div><span className={'inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full '+(i<2?'bg-dns-light/20 text-dns-mid':'bg-dns-bg text-dns-mid')}>{x[3]}</span><div className="font-alt text-[9px] text-dns-muted/70 mt-1">{t.locked}</div></div>)}
       </div>
-      <div className="dns-note">{t.note}</div>
+      <div className="dns-note dns-readable-copy">{t.note}</div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 mb-4"><Kpi label={t.variableFee} value="€ 45.000" sub={t.fullDistribution}/><Kpi label={t.activePartners} value={String(results.filter(r=>r.score>0).length)} sub={t.scorePositive}/><Kpi label={t.highestShare} value={fmtE(maxR.varFee)} sub={maxR.name}/></div>
       </section>
 
       <section id="fair-input" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.input}</SectionTitle>
-      <div className="dns-table-wrap"><table className="dns-table"><thead><tr><th>{t.partner}</th><th>PN</th><th>SWDNS</th><th>KP % ★</th><th>SA ★</th></tr></thead><tbody>{regions.map((r,i)=><tr key={r.name}><td><RegionLabel fairName={r.name}/></td><td className="text-right"><FormattedIntInput value={r.PN} onCommit={value=>updateRegion(i,'PN',value)}/></td><td className="text-right"><FormattedIntInput value={r.SW} onCommit={value=>updateRegion(i,'SW',value)}/></td><td className="text-right"><input type="number" className="dns-input" min="0" max="100" value={r.KP} onChange={e=>updateRegion(i,'KP',Number(e.target.value)||0)}/></td><td className="text-right"><input type="number" className="dns-input" min="0" value={r.SA} onChange={e=>updateRegion(i,'SA',Number(e.target.value)||0)}/></td></tr>)}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td className="text-right px-2.5">{totalPN.toLocaleString('de-DE')}</td><td className="text-right px-2.5">{totalSW.toLocaleString('de-DE')}</td><td className="text-right px-2.5">—</td><td className="text-right px-2.5">{totalSA}</td></tr></tfoot></table></div>
-      <div className="dns-note">{t.dataNote}</div>
+      <div className="dns-table-wrap"><table className="dns-table"><thead><tr><th>{t.partner}</th><th>PN</th><th>SWDNS</th><th>KP % ★</th><th>SA ★</th></tr></thead><tbody>{regions.map((r,i)=><tr key={r.name}><td><RegionLabel fairName={r.name}/></td><td className="text-right"><FormattedIntInput value={r.PN} onCommit={value=>updateRegion(i,'PN',value)}/></td><td className="text-right"><FormattedIntInput value={r.SW} onCommit={value=>updateRegion(i,'SW',value)}/></td><td className="text-right"><input type="number" className="dns-input dns-num" min="0" max="100" value={r.KP} onChange={e=>updateRegion(i,'KP',Number(e.target.value)||0)}/></td><td className="text-right"><input type="number" className="dns-input dns-num" min="0" value={r.SA} onChange={e=>updateRegion(i,'SA',Number(e.target.value)||0)}/></td></tr>)}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td className="text-right px-2.5">{totalPN.toLocaleString('de-DE')}</td><td className="text-right px-2.5">{totalSW.toLocaleString('de-DE')}</td><td className="text-right px-2.5">—</td><td className="text-right px-2.5">{totalSA}</td></tr></tfoot></table></div>
+      <div className="dns-note dns-readable-copy">{t.dataNote}</div>
       </section>
 
       <section id="fair-result" className="dns-fair-section" data-dns-reveal>
@@ -183,7 +183,7 @@ export default function App(){
       <section id="fair-annual" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.annual}</SectionTitle>
       <div className="dns-table-wrap"><table className="dns-table"><thead><tr><th>{t.partner}</th><th>Score %</th><th>Variable Fee</th><th>Fixed Fee</th><th>Tot. 2027</th><th>Quote 2026</th><th>+/−</th></tr></thead><tbody>{results.map((r,i)=>{const tot=r.varFee+FF,diff=tot-PREV[i];return <tr key={r.name}><td><RegionLabel fairName={r.name}/></td><td className="text-right">{fmt2(r.score)} %</td><td className="text-right font-bold text-dns-positive">{fmtE(r.varFee)}</td><td className="text-right">{fmtE(FF)}</td><td className="text-right font-bold text-dns-deep">{fmtE(tot)}</td><td className="text-right">{fmtE(PREV[i])}</td><td className={'text-right font-bold '+(diff>0?'text-dns-negative':'text-dns-positive')}>{diff>0?'+':''}{fmtE(diff)}</td></tr>;})}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td className="text-right">{fmt2(totalScore)} %</td><td className="text-right">{fmtE(totalVF)}</td><td className="text-right">{fmtE(FF*N)}</td><td className="text-right">{fmtE(totalAll)}</td><td className="text-right">{fmtE(totalPrev)}</td><td className="text-right">{(totalAll-totalPrev)>0?'+':''}{fmtE(totalAll-totalPrev)}</td></tr></tfoot></table></div>
-      <div className="dns-note">{t.vat}</div>
+      <div className="dns-note dns-readable-copy">{t.vat}</div>
       </section>
 
       <section id="fair-organisations" className="dns-fair-section" data-dns-reveal>
