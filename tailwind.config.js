@@ -1,3 +1,5 @@
+import { DNS_DESIGN_SYSTEM } from '@dolomitinordicski/dns-shared-data/design-system';
+
 export default {
   theme: {
     extend: {
@@ -9,8 +11,8 @@ export default {
         'dns-surface': 'var(--color-dns-surface)',
         'dns-muted': 'var(--color-dns-muted)',
         'dns-border': 'var(--color-dns-border)',
-        'dns-positive': '#0F6E56',
-        'dns-negative': '#993C1D',
+        'dns-positive': DNS_DESIGN_SYSTEM.colors.positive,
+        'dns-negative': DNS_DESIGN_SYSTEM.colors.negative,
       },
       fontFamily: {
         display: 'var(--font-display)',
