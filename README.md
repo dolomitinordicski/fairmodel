@@ -1,59 +1,49 @@
 # DNS FAIR
 
-Dolomiti NordicSki FAIR contribution model.
+Dolomiti NordicSki FAIR contribution model for WS 2026/27.
 
 ## Foundation alignment
 
-The application consumes DNS Foundation / Design System v1.12.1 from `@dolomitinordicski/dns-shared-data`.
+FAIR consumes the immutable DNS Foundation release `foundation-v1.2.0` from
+`@dolomitinordicski/dns-shared-data`.
 
-Shared Foundation behavior:
-- canonical sticky navigation runtime;
-- measured header/navigation stack;
-- scroll progress and active-section tracking;
-- Accessibility v1;
-- shared interaction and reveal runtimes;
-- shared DNS web logo;
+Foundation-owned behavior:
+- design variables and shared UI primitives;
+- operational shell, sticky header/navigation and scroll behavior;
+- DE-first language preference and language persistence;
+- Accessibility runtime;
+- motion and interaction runtimes;
+- print runtime;
+- footer runtime;
+- shared DNS brand assets;
+- canonical regional/organization logo helpers and manifest contract;
 - FAIR Data Contract metadata.
 
-Tool-specific behavior remains local:
-- FAIR input fields;
+FAIR-owned behavior:
+- FAIR inputs and domain presentation;
 - FAIR calculation engine;
-- FAIR persistence in the existing `fair-modell` Firebase project;
-- FAIR print/report outputs.
+- 2026/27 FAIR constants and parity baseline;
+- persistence in the existing `fair-modell` Firebase project;
+- FAIR-specific printable table contents;
+- DNS Core read-only consumption of `areaAllocationKeys`.
 
 ## Calculation-engine protection
 
-`src/features/fair/calculations.ts` is intentionally outside the Foundation rollout. The parity tests in `src/features/fair/calculations.test.ts` must remain green for every UI/Foundation migration.
+`src/features/fair/calculations.ts` and its constants are intentionally outside
+Foundation governance. UI/Foundation cleanup must not change the calculation
+engine.
 
+`src/features/fair/calculations.test.ts` is the parity guard for WS 2026/27 and
+must remain green for every refactor.
 
-### Shared regional logos
+## Shared assets
 
-FAIR resolves reporting-area logos from the canonical Shared Data manifest at `dns-shared-data/brand/regions/manifest.json`. No regional logo files are copied into this repository. Legacy FAIR area names are resolved through the canonical reporting-area alias map before matching manifest bindings.
+Brand and regional assets are resolved against the same immutable Foundation
+release tag used by the application dependency. No DNS logo or regional logo
+binary is copied into this repository.
 
+## Persistence boundaries
 
-## Foundation v1.13 architecture audit
-
-FAIR is aligned to the canonical DNS architecture:
-
-- Design System / Foundation v1.13.0 package pin;
-- shared navigation runtime;
-- shared Accessibility v1 runtime;
-- shared motion and interaction runtimes;
-- shared print runtime and `DNS_DESIGN_SYSTEM.print` tokens;
-- body-level `.dns-print-sheet` portal;
-- canonical regional-logo manifest and reporting-area aliases;
-- FAIR Data Contract metadata;
-- Tailwind CSS v4 through the Vite plugin, matching the current DNS application pattern.
-
-Legacy implementation removed during the v1.13 cleanup:
-
-- `backup.html` vanilla-JS FAIR application;
-- `firebase-config.js`;
-- local `logo.png` and `logo1.png`;
-- Tailwind v3 `tailwind.config.js`;
-- PostCSS/autoprefixer configuration;
-- popup/`document.write` printing;
-- local print CSS and page geometry;
-- local sticky/progress/navigation behavior.
-
-The FAIR calculation engine and its parity tests remain isolated from the Foundation layer.
+FAIR continues to own its model snapshot in the `fair-modell` project.
+DNS Core master data and area allocation keys are consumed read-only. FAIR does
+not mutate DNS Core master data.
