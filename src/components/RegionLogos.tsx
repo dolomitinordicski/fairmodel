@@ -1,32 +1,27 @@
 import { useEffect, useMemo, useState } from 'react';
-import { resolveOrganizationId, resolveReportingAreaId } from '@dolomitinordicski/dns-shared-data';
-
-type ManifestAsset = {
-  id: string;
-  label: string;
-  filename: string;
-  priority?: 'primary' | 'secondary';
-  entityBindings?: Array<{
-    entityType: 'reportingArea' | 'destination' | 'organization';
-    entityId: string;
-  }>;
-};
+import {
+  findRegionLogosForEntity,
+  regionLogoPath,
+  resolveOrganizationId,
+  resolveReportingAreaId,
+  type DNSBrandEntityType,
+  type DNSRegionLogoAsset,
+} from '@dolomitinordicski/dns-shared-data';
+import { DNS_FOUNDATION_RELEASE_VERSION } from '@dolomitinordicski/dns-shared-data/release';
 
 type Manifest = {
-  basePath?: string;
-  assets?: ManifestAsset[];
+  assets?: DNSRegionLogoAsset[];
 };
 
-const MANIFEST_URL =
-  'https://dolomitinordicski.github.io/dns-shared-data/brand/regions/manifest.json';
-const ASSET_BASE_URL =
-  'https://dolomitinordicski.github.io/dns-shared-data/brand/regions';
+const FOUNDATION_ASSET_BASE =
+  `https://raw.githubusercontent.com/dolomitinordicski/dns-shared-data/foundation-v${DNS_FOUNDATION_RELEASE_VERSION}`;
+const MANIFEST_URL = `${FOUNDATION_ASSET_BASE}/brand/regions/manifest.json`;
 
-let manifestPromise: Promise<ManifestAsset[]> | null = null;
+let manifestPromise: Promise<DNSRegionLogoAsset[]> | null = null;
 
 function loadManifest() {
   if (!manifestPromise) {
-    manifestPromise = fetch(MANIFEST_URL, { cache: 'no-cache' })
+    manifestPromise = fetch(MANIFEST_URL, { cache: 'force-cache' })
       .then((response) => {
         if (!response.ok) throw new Error(`Region logo manifest HTTP ${response.status}`);
         return response.json() as Promise<Manifest>;
@@ -40,22 +35,18 @@ function loadManifest() {
   return manifestPromise;
 }
 
-function logoRank(asset: ManifestAsset) {
-  return asset.priority === 'primary' ? 0 : asset.priority === 'secondary' ? 2 : 1;
-}
-
 export function EntityLogos({
   entityType,
   entityId,
   compact = false,
   print = false,
 }: {
-  entityType: 'reportingArea' | 'destination' | 'organization';
+  entityType: DNSBrandEntityType;
   entityId: string;
   compact?: boolean;
   print?: boolean;
 }) {
-  const [assets, setAssets] = useState<ManifestAsset[]>([]);
+  const [assets, setAssets] = useState<DNSRegionLogoAsset[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -68,16 +59,7 @@ export function EntityLogos({
   }, []);
 
   const logos = useMemo(
-    () =>
-      assets
-        .filter((asset) =>
-          asset.entityBindings?.some(
-            (binding) =>
-              binding.entityType === entityType &&
-              binding.entityId === entityId,
-          ),
-        )
-        .sort((a, b) => logoRank(a) - logoRank(b)),
+    () => findRegionLogosForEntity(assets, entityType, entityId),
     [assets, entityType, entityId],
   );
 
@@ -89,7 +71,7 @@ export function EntityLogos({
         <img
           key={asset.id}
           className={print ? 'dns-print-region-logo' : 'dns-region-logo'}
-          src={`${ASSET_BASE_URL}/${asset.filename}`}
+          src={`${FOUNDATION_ASSET_BASE}/${regionLogoPath(asset)}`}
           alt={asset.label}
           loading="lazy"
         />
