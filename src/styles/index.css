@@ -87,49 +87,39 @@
     height: 22px;
   }
 
-  .dns-note {
-    @apply mb-4 rounded-[10px] border-l-4 border-dns-light bg-white px-3 py-2.5 text-[10px] leading-relaxed text-dns-muted shadow-[0_1px_4px_rgba(13,77,94,.05)] md:text-[11px];
+  /* Foundation v1.18 owns dns-note, dns-table, dns-input and dns-button.
+     FAIR only keeps domain-specific sizing/alignment. */
+  .dns-fair-table-wrap {
+    @apply mb-4 rounded-[10px] shadow-[0_1px_4px_rgba(13,77,94,.07)];
   }
 
-  .dns-table-wrap {
-    @apply mb-4 overflow-x-auto overflow-y-hidden rounded-[10px] bg-white shadow-[0_1px_4px_rgba(13,77,94,.07)];
+  .dns-fair-table {
+    @apply min-w-[720px] md:min-w-[760px];
   }
 
-  .dns-table {
-    @apply w-full min-w-[720px] border-collapse md:min-w-[760px];
+  .dns-fair-table th:not(:first-child),
+  .dns-fair-table td:not(:first-child) {
+    @apply text-right;
   }
 
-  .dns-table thead { @apply bg-white; }
-
-  .dns-table th {
-    @apply border-b border-dns-mid/20 px-2.5 py-2 text-left font-display text-[9px] font-bold uppercase tracking-[.06em] text-dns-mid;
+  .dns-fair-table td:not(:first-child) {
+    @apply font-alt;
   }
 
-  .dns-table th:not(:first-child) { @apply text-right; }
-
-  .dns-table td {
-    @apply border-b border-dns-mid/10 px-2.5 py-1.5 align-middle text-[11px] text-dns-deep;
+  .dns-fair-table tbody tr:hover > * {
+    @apply bg-dns-deep/[.025];
   }
 
-  .dns-table td:not(:first-child) { @apply text-right font-alt; }
-  .dns-table tbody tr:hover { @apply bg-dns-deep/[.025]; }
-  .dns-table td:first-child { @apply font-display font-medium text-dns-deep; }
-  .dns-table tfoot { @apply bg-dns-deep/[.04]; }
-
-  .dns-input {
-    @apply w-[92px] rounded border border-dns-mid/20 bg-white px-2 py-1.5 text-right font-alt text-[11px] text-dns-deep focus:border-dns-mid focus:outline-none focus:ring-1 focus:ring-dns-mid/15 md:w-[100px] md:py-1;
+  .dns-fair-table td:first-child {
+    @apply font-display font-medium text-dns-deep;
   }
 
-  .dns-btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.05em] md:px-4 md:py-1.5 md:text-[11px];
+  .dns-fair-table tfoot {
+    @apply bg-dns-deep/[.04];
   }
 
-  .dns-btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md bg-dns-deep px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.05em] text-white hover:bg-dns-mid md:px-4 md:py-1.5 md:text-[11px];
-  }
-
-  .dns-btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-dns-mid/20 bg-white px-3 py-2 font-display text-[10px] font-semibold uppercase tracking-[.05em] text-dns-deep hover:bg-dns-deep/[.04] md:px-4 md:py-1.5 md:text-[11px];
+  .dns-fair-number-input {
+    @apply w-[92px] text-right md:w-[100px];
   }
 }
 
