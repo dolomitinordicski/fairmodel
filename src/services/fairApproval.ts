@@ -44,7 +44,7 @@ export async function approveFair(assemblyDate: string) {
   if (!p.exists() || p.data().active !== true || !p.data().globalRoles?.includes('dns-admin')) {
     throw new Error('DNS_ADMIN_REQUIRED');
   }
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(assemblyDate)) throw new Error('INVALID_ASSEMBLY_DATE');
+  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(assemblyDate)) throw new Error('INVALID_ASSEMBLY_DATE');
   await runTransaction(fairDb, async tx => {
     const current = await tx.get(approvalRef);
     if (!current.exists()) throw new Error('FAIR_NOT_PERSISTED');
