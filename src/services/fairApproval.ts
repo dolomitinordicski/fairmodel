@@ -1,5 +1,5 @@
 import { getApps, initializeApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged, type User } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, type User } from 'firebase/auth';
 import { doc, getDoc, getFirestore, onSnapshot, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { firebaseConfig } from './firebaseConfig';
 
@@ -36,6 +36,7 @@ export function subscribeFairAdmin(callback: (isAdmin: boolean) => void) {
     } catch { callback(false); }
   });
 }
+export async function loginFairAdmin() { await signInWithPopup(auth, new GoogleAuthProvider()); }
 export async function approveFair(assemblyDate: string) {
   const user = auth.currentUser;
   if (!user) throw new Error('DNS_ADMIN_LOGIN_REQUIRED');
