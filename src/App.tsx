@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { approveFair, loginFairAdmin, subscribeFairAdmin, subscribeFairApproval, type FairApproval } from './services/fairApproval';
 import type { Language, Region, SaveMode } from './types/fair';
 import { translations } from './i18n/translations';
 import { calculateFairDistribution } from './features/fair/calculations';
@@ -30,16 +31,22 @@ import { openDNSOverlay } from '@dolomitinordicski/dns-shared-data/ui/overlay';
 const SectionTitle=({children}:{children:React.ReactNode})=><h2 className="dns-section-title mt-4 md:mt-5 mb-2">{children}</h2>;
 const Kpi=({label,value,sub}:{label:string;value:string;sub?:string})=><div className="dns-card border-t-[3px] border-t-dns-light p-3 md:px-4 md:py-3"><div className="font-display text-[10px] font-bold uppercase tracking-[.07em] text-dns-mid mb-1">{label}</div><div className="font-display text-[20px] md:text-[21px] leading-none font-bold text-dns-deep">{value}</div>{sub&&<div className="font-alt text-[10px] text-dns-muted mt-1">{sub}</div>}</div>;
 
-function FormattedIntInput({value,onCommit}:{value:number;onCommit:(value:number)=>void}){
+function FormattedIntInput({value,onCommit,disabled=false}:{value:number;onCommit:(value:number)=>void;disabled?:boolean}){
   const [text,setText]=useState(()=>fmtInputInt(value));
   useEffect(()=>setText(fmtInputInt(value)),[value]);
-  return <input className="dns-input dns-num dns-fair-number-input" inputMode="numeric" value={text}
+  return <input disabled={disabled} className="dns-input dns-num dns-fair-number-input" inputMode="numeric" value={text}
     onFocus={e=>e.currentTarget.select()}
     onChange={e=>setText(e.target.value)}
     onBlur={()=>{const next=parseFormattedInt(text);setText(fmtInputInt(next));onCommit(next);}} />;
 }
 
 export default function App(){
+  const [approval,setApproval]=useState<FairApproval|null>(null);
+  const [approvalReady,setApprovalReady]=useState(false);
+  const [approvalAdmin,setApprovalAdmin]=useState(false);
+  const [approvalDate,setApprovalDate]=useState('');
+  const [approvalError,setApprovalError]=useState('');
+  const [approvalSaving,setApprovalSaving]=useState(false);
   const [language,setLanguage]=useState<Language>(()=>getDNSFairLanguage());
   const [regions,setRegions]=useState<Region[]>(()=>loadLocal()?.regions ?? DEFAULT_REGIONS.map(r=>({...r})));
   const [saveMode,setSaveMode]=useState<SaveMode>('waiting');
@@ -57,6 +64,8 @@ export default function App(){
   const fairContract=DNS_DATA_CONTRACTS.find(contract=>contract.id==='fair');
 
   useEffect(()=>subscribeDNSFairLanguage(setLanguage),[]);
+  useEffect(()=>subscribeFairAdmin(setApprovalAdmin),[]);
+  useEffect(()=>subscribeFairApproval(a=>{setApproval(a);setApprovalReady(true);},()=>{setApprovalReady(false);setApprovalError('Approval status unavailable');}),[]);
   useEffect(()=>{
     if(!resetOpen || !resetDialogRef.current)return;
     const overlay=openDNSOverlay({
@@ -106,19 +115,20 @@ export default function App(){
     setSaveMode(state.mode==='firebase'?'cloud':'local');
   }catch(e){console.warn(e);setSaveMode('error');}finally{hydrated.current=true;}})();},[]);
 
-  useEffect(()=>{if(!hydrated.current || organisationGroups.length===0)return; const id=window.setTimeout(async()=>{const now=Date.now();try{
+  useEffect(()=>{if(!hydrated.current || organisationGroups.length===0 || !approvalReady || approval)return; const id=window.setTimeout(async()=>{const now=Date.now();try{
     saveLocal(regions,now);
     if(persistence.current?.mode==='firebase'){setSaveMode('waiting');await saveCloud(persistence.current.db,persistence.current.ref,regions,organisationGroups,now);setSaveMode('cloud');}
     else setSaveMode('local');
     setSaveAt(now);
-  }catch(e){console.warn(e);setSaveMode('error');setSaveAt(now);}},350);return()=>window.clearTimeout(id);},[regions,organisationGroups]);
+  }catch(e){console.warn(e);setSaveMode('error');setSaveAt(now);}},350);return()=>window.clearTimeout(id);},[regions,organisationGroups,approval,approvalReady]);
 
   const stamp=saveAt?new Date(saveAt).toLocaleTimeString(language==='de'?'de-DE':'it-IT',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'';
   const statusText=(saveMode==='cloud'?t.cloud:saveMode==='waiting'?t.waiting:saveMode==='error'?t.error:t.local)+(stamp?' · '+stamp:'');
   const statusDot=saveMode==='cloud'?'bg-dns-positive':saveMode==='waiting'?'bg-dns-mid':saveMode==='error'?'bg-dns-negative':'bg-dns-light';
 
-  function updateRegion(index:number,key:keyof Pick<Region,'PN'|'SW'|'KP'|'SA'>,value:number){setRegions(prev=>prev.map((r,i)=>i===index?{...r,[key]:value}:r));}
+  function updateRegion(index:number,key:keyof Pick<Region,'PN'|'SW'|'KP'|'SA'>,value:number){if(approval || !approvalReady)return;setRegions(prev=>prev.map((r,i)=>i===index?{...r,[key]:value}:r));}
   function reset(){
+    if(approval || !approvalReady)return;
     setRegions(DEFAULT_REGIONS.map(r=>({...r})));
     setResetOpen(false);
   }
@@ -179,10 +189,23 @@ export default function App(){
         <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('overview')}>⬇ {t.print}</button>
         <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('final')}>⬇ {t.printFinal}</button>
         <button className="dns-button" data-variant="primary" onClick={()=>requestPrint('organisations')}>⬇ {t.printOrg}</button>
-        <button className="dns-button" data-variant="secondary" onClick={()=>setResetOpen(true)}>↺ {t.reset}</button>
+        <button className="dns-button" data-variant="secondary" disabled={!!approval || !approvalReady} onClick={()=>setResetOpen(true)}>↺ {t.reset}</button>
         <div className="md:ml-auto flex items-center gap-1.5 text-[10px] text-dns-muted px-2 py-1 border border-dns-border rounded bg-white"><span className={'w-[7px] h-[7px] rounded-full '+statusDot}/>{statusText}</div>
       </div>
 
+      <section className="dns-card p-4 space-y-2" aria-label="FAIR approval">
+        {approval ? <p role="status" className="font-semibold">🔒 Approved · {approval.approvedAt.toLocaleString(language==='de'?'de-DE':'it-IT')} · Vollversammlung {approval.assemblyDate}</p>
+          : <p>{language==='de'?'FAIR noch nicht genehmigt':'FAIR non ancora approvato'}</p>}
+        {!approval && approvalReady && <div className="flex flex-wrap gap-2 items-center">
+          {!approvalAdmin && <button type="button" className="dns-button" onClick={()=>void loginFairAdmin().catch(()=>setApprovalError('DNS Admin login failed'))}>DNS Admin Login</button>}
+          {approvalAdmin && <><input type="date" className="dns-input" aria-label="Vollversammlung date" value={approvalDate} onChange={e=>setApprovalDate(e.target.value)}/>
+            <button type="button" className="dns-button" disabled={!approvalDate || approvalSaving} onClick={()=>{
+              if(!window.confirm(language==='de'?'FAIR endgültig genehmigen und sperren?':'Approvare definitivamente e bloccare FAIR?'))return;
+              setApprovalSaving(true);setApprovalError('');void approveFair(approvalDate).catch(()=>setApprovalError('Approval failed; check Firebase rules and privileges')).finally(()=>setApprovalSaving(false));
+            }}>Approve FAIR</button></>}
+        </div>}
+        {approvalError && <p role="alert" className="text-dns-negative">{approvalError}</p>}
+      </section>
       <section id="fair-parameters" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.parameters}</SectionTitle>
       <div className="grid grid-cols-1 min-[421px]:grid-cols-2 md:grid-cols-4 gap-2.5 mb-4">
@@ -194,7 +217,7 @@ export default function App(){
 
       <section id="fair-input" className="dns-fair-section" data-dns-reveal>
       <SectionTitle>{t.input}</SectionTitle>
-      <div className="dns-table-wrap dns-fair-table-wrap"><table className="dns-table dns-fair-table"><thead><tr><th>{t.partner}</th><th>PN</th><th>SWDNS</th><th>KP % ★</th><th>SA ★</th></tr></thead><tbody>{regions.map((r,i)=><tr key={r.name}><td><RegionLabel fairName={r.name}/></td><td className="text-right"><FormattedIntInput value={r.PN} onCommit={value=>updateRegion(i,'PN',value)}/></td><td className="text-right"><FormattedIntInput value={r.SW} onCommit={value=>updateRegion(i,'SW',value)}/></td><td className="text-right"><input type="number" className="dns-input dns-num dns-fair-number-input" min="0" max="100" value={r.KP} onChange={e=>updateRegion(i,'KP',Number(e.target.value)||0)}/></td><td className="text-right"><input type="number" className="dns-input dns-num dns-fair-number-input" min="0" value={r.SA} onChange={e=>updateRegion(i,'SA',Number(e.target.value)||0)}/></td></tr>)}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td className="text-right px-2.5">{totalPN.toLocaleString('de-DE')}</td><td className="text-right px-2.5">{totalSW.toLocaleString('de-DE')}</td><td className="text-right px-2.5">—</td><td className="text-right px-2.5">{totalSA}</td></tr></tfoot></table></div>
+      <div className="dns-table-wrap dns-fair-table-wrap"><table className="dns-table dns-fair-table"><thead><tr><th>{t.partner}</th><th>PN</th><th>SWDNS</th><th>KP % ★</th><th>SA ★</th></tr></thead><tbody>{regions.map((r,i)=><tr key={r.name}><td><RegionLabel fairName={r.name}/></td><td className="text-right"><FormattedIntInput disabled={!!approval || !approvalReady} value={r.PN} onCommit={value=>updateRegion(i,'PN',value)}/></td><td className="text-right"><FormattedIntInput disabled={!!approval || !approvalReady} value={r.SW} onCommit={value=>updateRegion(i,'SW',value)}/></td><td className="text-right"><input type="number" className="dns-input dns-num dns-fair-number-input" disabled={!!approval || !approvalReady} min="0" max="100" value={r.KP} onChange={e=>updateRegion(i,'KP',Number(e.target.value)||0)}/></td><td className="text-right"><input type="number" className="dns-input dns-num dns-fair-number-input" min="0" value={r.SA} onChange={e=>updateRegion(i,'SA',Number(e.target.value)||0)}/></td></tr>)}</tbody><tfoot><tr className="bg-dns-bg font-bold text-dns-deep border-t-2 border-dns-light"><td className="px-2.5 py-2">{t.total}</td><td className="text-right px-2.5">{totalPN.toLocaleString('de-DE')}</td><td className="text-right px-2.5">{totalSW.toLocaleString('de-DE')}</td><td className="text-right px-2.5">—</td><td className="text-right px-2.5">{totalSA}</td></tr></tfoot></table></div>
       <div className="dns-note dns-readable-copy">{t.dataNote}</div>
       </section>
 
