@@ -1,4 +1,4 @@
-import test from 'node:test';
+const { test } = await import(process.env.VITEST ? 'vitest' : 'node:test');
 import assert from 'node:assert/strict';
 import { key, releaseVersion, verifyState, needsUpdate } from './foundation-lock.mjs';
 
